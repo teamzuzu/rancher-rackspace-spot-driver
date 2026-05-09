@@ -1,0 +1,31 @@
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+    - gocritic
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/teamzuzu/rancher-rackspace-spot-driver
+  revive:
+    rules:
+      - name: exported
+        disabled: true  # driver methods don't all need doc comments
+
+issues:
+  exclude-rules:
+    # ETCDSave/Restore/RemoveSnapshot intentionally return unsupported errors
+    - path: driver/driver.go
+      text: "unused"
+  max-same-issues: 0
+
+run:
+  timeout: 5m
