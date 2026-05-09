@@ -39,9 +39,12 @@ Fill in the form:
 | Field | Value |
 |---|---|
 | **Download URL** | `https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/latest/download/rancher-rackspace-spot-driver_linux_amd64.tar.gz` |
-| **Custom UI URL** | *(leave blank)* |
+| **Custom UI URL** | `https://teamzuzu.github.io/rancher-rackspace-spot-driver/ui/component.js` |
 | **Checksum** | *(optional — copy from the release checksums file)* |
 | **Whitelist Domains** | `rackspacespot.com` |
+
+!!! info "Custom UI"
+    The Custom UI URL loads the cluster creation form directly in Rancher's Dashboard. Without it, Rancher's newer Dashboard UI does not show configuration fields. The legacy Cluster Manager UI works without a Custom UI URL.
 
 Click **Create**.
 
