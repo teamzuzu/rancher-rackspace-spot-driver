@@ -1,6 +1,8 @@
-# Rancher Cluster Driver — Rackspace Spot
+# Rancher Cluster Driver For Rackspace Spot
 
-A [Rancher kontainer-engine](https://github.com/rancher/kontainer-engine) cluster driver that provisions and manages Kubernetes clusters on [Rackspace Spot](https://spot.rackspace.com) — the GPU-accelerated spot compute platform.
+
+
+A [rancher kontainer-engine](https://github.com/rancher/kontainer-engine) cluster driver that provisions and manages Kubernetes clusters on [Rackspace Spot](https://spot.rackspace.com) — the spot compute platform.
 
 ## Overview
 
@@ -12,6 +14,8 @@ This driver lets you create, scale, and delete Rackspace Spot **CloudSpaces** (m
 - Preemption webhook integration
 - Kubernetes version management
 
+
+[![CI](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/ci.yml) [![Release](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/release.yml) [![Deploy Docs](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/pages.yml)
 ---
 
 ## Prerequisites
