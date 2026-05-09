@@ -7,14 +7,11 @@ linters:
     - staticcheck
     - unused
     - gofmt
-    - goimports
     - misspell
     - revive
     - gocritic
 
 linters-settings:
-  goimports:
-    local-prefixes: github.com/teamzuzu/rancher-rackspace-spot-driver
   revive:
     rules:
       - name: exported
