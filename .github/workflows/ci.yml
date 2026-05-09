@@ -24,6 +24,9 @@ jobs:
       - name: Generate go.sum
         run: go mod tidy
 
+      - name: Format
+        run: go fmt ./...
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:

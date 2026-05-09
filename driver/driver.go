@@ -228,7 +228,7 @@ func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterI
 }
 
 // Update modifies the node pools and/or Kubernetes version of an existing cluster.
-func (d *Driver) Update(ctx context.Context, opts *types.DriverOptions, clusterInfo *types.ClusterInfo) (*types.ClusterInfo, error) {
+func (d *Driver) Update(ctx context.Context, clusterInfo *types.ClusterInfo, opts *types.DriverOptions) (*types.ClusterInfo, error) {
 	s, err := stateFromClusterInfo(clusterInfo)
 	if err != nil {
 		return clusterInfo, err
