@@ -143,7 +143,7 @@ go mod tidy
 
 # Build
 make build
-# Binary written to bin/rancher-rackspace-spot-driver
+# Binary written to bin/kontainer-engine-driver-rackspacespot
 
 # Run tests
 make test

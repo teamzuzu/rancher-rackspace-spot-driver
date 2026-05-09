@@ -76,7 +76,7 @@ jobs:
           CGO_ENABLED: "0"
           GOOS: linux
           GOARCH: ${{ matrix.goarch }}
-        run: go build -ldflags "-s -w" -o bin/rancher-rackspace-spot-driver .
+        run: go build -ldflags "-s -w" -o bin/kontainer-engine-driver-rackspacespot .
 
   test:
     name: Test
