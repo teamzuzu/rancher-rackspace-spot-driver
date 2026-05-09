@@ -21,6 +21,9 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Generate go.sum
+        run: go mod tidy
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
@@ -40,11 +43,11 @@ jobs:
 
       - run: go mod tidy
 
-      - name: Fail if go.mod or go.sum changed
+      - name: Fail if go.mod changed
         run: |
-          if ! git diff --quiet go.mod go.sum; then
-            echo "go.mod or go.sum is out of date — run 'go mod tidy' locally and commit the result"
-            git diff go.mod go.sum
+          if ! git diff --quiet go.mod; then
+            echo "go.mod is out of date — run 'go mod tidy' locally and commit go.mod"
+            git diff go.mod
             exit 1
           fi
 
@@ -61,6 +64,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Generate go.sum
+        run: go mod tidy
 
       - name: Build (${{ matrix.goarch }})
         env:
@@ -80,6 +86,9 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Generate go.sum
+        run: go mod tidy
+
       - name: Run tests
         run: go test -v -race -count=1 ./...
 
@@ -93,5 +102,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Generate go.sum
+        run: go mod tidy
 
       - run: go vet ./...

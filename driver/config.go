@@ -192,7 +192,7 @@ func mergeState(existing *clusterState, opts *types.DriverOptions) {
 	if n := opts.IntOptions[flagSpotNodeCount]; n > 0 {
 		existing.SpotNodeCount = int(n)
 	}
-	if v := opts.BoolOptions[flagSpotAutoscaling] {
+	if v := opts.BoolOptions[flagSpotAutoscaling]; v {
 		existing.SpotAutoscaling = v
 	}
 	if n := opts.IntOptions[flagSpotMinNodes]; n > 0 {
@@ -201,7 +201,7 @@ func mergeState(existing *clusterState, opts *types.DriverOptions) {
 	if n := opts.IntOptions[flagSpotMaxNodes]; n > 0 {
 		existing.SpotMaxNodes = n
 	}
-	if v := opts.BoolOptions[flagOnDemandEnabled] {
+	if v := opts.BoolOptions[flagOnDemandEnabled]; v {
 		existing.OnDemandEnabled = v
 	}
 	if n := opts.IntOptions[flagOnDemandCount]; n > 0 {

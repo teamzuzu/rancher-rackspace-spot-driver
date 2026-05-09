@@ -19,10 +19,10 @@ builds:
 
 archives:
   - id: default
-    format: tar.gz
+    formats: [tar.gz]
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     files:
-      - none*  # binary only — no extra files in the archive
+      - none*
 
 checksum:
   name_template: checksums.txt
