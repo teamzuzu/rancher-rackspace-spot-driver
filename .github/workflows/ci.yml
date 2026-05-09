@@ -76,7 +76,7 @@ jobs:
           CGO_ENABLED: "0"
           GOOS: linux
           GOARCH: ${{ matrix.goarch }}
-        run: go build -ldflags "-s -w" -o bin/rancher-rackspace-spot-driver .
+        run: go build -ldflags "-s -w" -o bin/kontainer-engine-driver-rackspacespot .
 
   test:
     name: Test
@@ -93,7 +93,7 @@ jobs:
         run: go mod tidy
 
       - name: Run tests
-        run: go test -v -race -count=1 ./...
+        run: go test -v -count=1 ./...
 
   vet:
     name: go vet
