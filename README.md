@@ -55,11 +55,11 @@ Keep the refresh token — you'll paste it into Rancher when creating a cluster.
 
    | Field | Value |
    |---|---|
-   | **Download URL** | `https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/download/v0.1.0/rancher-rackspace-spot-driver_linux_amd64.tar.gz` |
+   | **Download URL** | `https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/download/v0.0.5/rancher-rackspace-spot-driver_linux_amd64.tar.gz` |
    | **Custom UI URL** | `https://teamzuzu.github.io/rancher-rackspace-spot-driver/ui/component.js` |
    | **Whitelist Domains** | `spot.rackspace.com` |
 
-   > Replace `v0.1.0` with the [latest release](https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/latest) tag.
+   > Replace `v0.0.5` with the [latest release](https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/latest) tag.
 
    > The **Custom UI URL** provides the configuration form in Rancher's Dashboard (v2.7+). Without it, no fields or Save button appear.
 
