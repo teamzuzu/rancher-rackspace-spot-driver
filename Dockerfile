@@ -1,13 +1,11 @@
 FROM golang:1.24-alpine AS builder
 
 WORKDIR /src
-COPY go.mod ./
-RUN go mod tidy
-
 COPY . .
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+RUN go mod tidy && \
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags "-s -w" -o /bin/kontainer-engine-driver-rackspacespot .
 
 FROM scratch
