@@ -21,7 +21,7 @@ concurrency:
 jobs:
   build:
     name: Build docs
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, anchovy]
     steps:
       - uses: actions/checkout@v4
 
@@ -48,7 +48,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, anchovy]
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
