@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "New version tag (e.g. v1.2.3) — current latest is shown at the top of the Validate job once the workflow starts"
+        description: "Version to release (e.g. v1.2.3)"
         required: true
         type: string
       draft:
@@ -26,20 +26,6 @@ jobs:
     outputs:
       version: ${{ steps.check.outputs.version }}
     steps:
-      - name: Show current latest release
-        run: |
-          LATEST=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "(none)")
-          echo "::notice::Current latest release: $LATEST — you are releasing: ${{ inputs.version }}"
-          {
-            echo "## Release"
-            echo "| | Version |"
-            echo "|---|---|"
-            echo "| **Current latest** | \`$LATEST\` ← this is what is live now |"
-            echo "| **Releasing** | \`${{ inputs.version }}\` |"
-          } >> "$GITHUB_STEP_SUMMARY"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Check version format
         id: check
         run: |
