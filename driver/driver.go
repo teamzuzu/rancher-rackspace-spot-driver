@@ -425,8 +425,8 @@ func (d *Driver) ETCDSave(ctx context.Context, clusterInfo *types.ClusterInfo, o
 }
 
 // ETCDRestore is not supported — control plane ETCD is fully managed by Rackspace Spot.
-func (d *Driver) ETCDRestore(ctx context.Context, clusterInfo *types.ClusterInfo, opts *types.DriverOptions, snapshotName string) error {
-	return fmt.Errorf("ETCD restore is managed by Rackspace Spot and cannot be triggered via the driver")
+func (d *Driver) ETCDRestore(ctx context.Context, clusterInfo *types.ClusterInfo, opts *types.DriverOptions, snapshotName string) (*types.ClusterInfo, error) {
+	return nil, fmt.Errorf("ETCD restore is managed by Rackspace Spot and cannot be triggered via the driver")
 }
 
 // ETCDRemoveSnapshot is not supported — control plane ETCD is fully managed by Rackspace Spot.
