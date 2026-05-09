@@ -24,17 +24,20 @@ This driver lets you create, scale, and delete Rackspace Spot **CloudSpaces** (m
 
 ### Getting a refresh token
 
-Install the Rackspace Spot CLI and authenticate:
+The easiest way is directly from the Rackspace Spot console — no CLI required:
+
+1. Log in to the [Rackspace Spot console](https://spot.rackspace.com)
+2. Go to **Account → API Access**
+3. Click **Get new token**, give it a name, and copy the value
+
+Alternatively, use the [`spotctl`](https://github.com/rackspace-spot/spotctl) CLI:
 
 ```bash
-# Install (see https://spot.rackspace.com/docs for latest instructions)
-curl -sSL https://spot.rackspace.com/install | sh
+# Download the latest release for your platform from:
+# https://github.com/rackspace-spot/spotctl/releases
 
-# Log in — this stores a refresh token locally
-rxtspot login
-
-# Print your refresh token
-rxtspot token
+# Run the interactive setup — it will prompt for your token and org
+spotctl configure
 ```
 
 Keep the refresh token — you'll paste it into Rancher when creating a cluster.
@@ -135,7 +138,7 @@ Run `rxtspot server-classes list` to see classes available in your region, or vi
 git clone https://github.com/teamzuzu/rancher-rackspace-spot-driver
 cd rancher-rackspace-spot-driver
 
-# Resolve dependencies (requires Go 1.21+)
+# Resolve dependencies (requires Go 1.24+)
 go mod tidy
 
 # Build
