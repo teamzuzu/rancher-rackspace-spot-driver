@@ -126,7 +126,7 @@ jobs:
   update-readme:
     name: Update README & trigger docs rebuild
     needs: [validate, goreleaser, docker]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, anchovy]
     steps:
       - uses: actions/checkout@v4
         with:
