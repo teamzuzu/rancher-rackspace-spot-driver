@@ -14,9 +14,10 @@ on:
         type: boolean
 
 permissions:
-  contents: write       # create GitHub releases, upload assets, push tags
+  contents: write       # create GitHub releases, upload assets, push tags, commit README
   packages: write       # push to GitHub Container Registry
   id-token: write       # needed by some OIDC-based actions
+  actions: write        # trigger the Deploy Docs workflow after README update
 
 jobs:
   validate:
@@ -121,3 +122,43 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  update-readme:
+    name: Update README & trigger docs rebuild
+    needs: [validate, goreleaser, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update version references in README.md
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          # Update the versioned download URL
+          sed -i "s|releases/download/v[0-9]\+\.[0-9]\+\.[0-9]\+/|releases/download/${VERSION}/|g" README.md
+          # Update the inline "Replace `vX.Y.Z`" note
+          sed -i "s|Replace \`v[0-9]\+\.[0-9]\+\.[0-9]\+\`|Replace \`${VERSION}\`|g" README.md
+
+      - name: Commit and push if changed
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          if git diff --quiet README.md; then
+            echo "README.md already up to date"
+          else
+            git add README.md
+            git commit -m "docs: update README download URL to ${VERSION} [skip ci]"
+            git push origin main
+          fi
+
+      - name: Trigger docs site rebuild
+        run: |
+          gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
