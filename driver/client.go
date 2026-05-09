@@ -22,7 +22,7 @@ func newSpotClient(ctx context.Context, refreshToken, org string) (*spotClient, 
 		return nil, fmt.Errorf("failed to create spot client: %w", err)
 	}
 
-	if err := c.Authenticate(ctx); err != nil {
+	if _, err := c.Authenticate(ctx); err != nil {
 		return nil, fmt.Errorf("spot authentication failed: %w", err)
 	}
 
