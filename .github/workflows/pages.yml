@@ -35,6 +35,9 @@ jobs:
           cache: yarn
           cache-dependency-path: ui/yarn.lock
 
+      - name: Enable corepack
+        run: corepack enable
+
       - name: Install UI dependencies
         working-directory: ui
         run: yarn install --frozen-lockfile
