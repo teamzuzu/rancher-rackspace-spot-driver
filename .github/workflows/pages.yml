@@ -35,8 +35,8 @@ jobs:
           cache: yarn
           cache-dependency-path: ui/yarn.lock
 
-      - name: Enable corepack
-        run: corepack enable
+      - name: Install yarn
+        run: npm install -g yarn
 
       - name: Install UI dependencies
         working-directory: ui
