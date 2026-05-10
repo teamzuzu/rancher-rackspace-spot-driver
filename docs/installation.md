@@ -43,8 +43,8 @@ Fill in the form:
 | **Checksum** | *(optional — copy from the release checksums file)* |
 | **Whitelist Domains** | `rackspacespot.com` |
 
-!!! info "Custom UI"
-    The Custom UI URL loads the cluster creation form directly in Rancher's Dashboard. Without it, Rancher's newer Dashboard UI does not show configuration fields. The legacy Cluster Manager UI works without a Custom UI URL.
+!!! info "Custom UI (Rancher 2.11+)"
+    The Custom UI URL loads a Vue-based UI Extension that renders the cluster configuration form in Rancher 2.11+. It replaces the deprecated Ember-based Custom UI Plugins. The legacy Cluster Manager UI continues to work without a Custom UI URL, but the modern Dashboard UI requires it.
 
 Click **Create**.
 

@@ -1,0 +1,11 @@
+{
+  "extends": "@rancher/shell/tsconfig.json",
+  "include": [
+    "pkg/**/*.ts",
+    "pkg/**/*.vue",
+    "pkg/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

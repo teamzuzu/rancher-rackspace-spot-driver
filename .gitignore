@@ -3,3 +3,12 @@ vendor/
 *.test
 *.out
 .env
+
+# UI extension build artifacts
+ui/node_modules/
+ui/pkg/**/node_modules/
+ui/dist/
+ui/dist-pkg/
+ui/.output/
+# .shell symlink created by build-pkg.sh during builds
+ui/pkg/**/.shell
