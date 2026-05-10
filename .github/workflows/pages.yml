@@ -33,18 +33,13 @@ jobs:
         with:
           node-version-file: ui/.nvmrc
 
-      - name: Install yarn
-        run: |
-          npm install -g yarn
-          echo "$(npm config get prefix)/bin" >> "$GITHUB_PATH"
-
       - name: Install UI dependencies
         working-directory: ui
-        run: yarn install --frozen-lockfile
+        run: npm install --legacy-peer-deps
 
       - name: Build UI extension
         working-directory: ui
-        run: yarn build-pkg-standalone rackspacespot
+        run: npm run build-pkg-standalone rackspacespot
 
       - name: Copy extension bundle to docs/ui
         run: |
