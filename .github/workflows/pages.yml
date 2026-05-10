@@ -44,7 +44,7 @@ jobs:
 
       - name: Build UI extension
         working-directory: ui
-        run: yarn build-pkg rackspacespot
+        run: yarn build-pkg-standalone rackspacespot
 
       - name: Copy extension bundle to docs/ui
         run: |
