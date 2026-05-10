@@ -2,9 +2,9 @@
 /* Rancher Cluster Driver — Rackspace Spot
  * AMD module: ui/components/cluster-driver/driver-rackspacespot/component
  *
- * Template pre-compiled with ember-source@3.24.7.
- * No {{input}} (not registered in Rancher's minimal Ember iframe context).
- * No {{each}} / -track-array. Uses plain <input> elements + explicit actions.
+ * Renders entirely via didInsertElement + innerHTML to avoid all Glimmer VM
+ * helper resolution (the component owner is not fully wired when loaded as
+ * an external AMD module, causing null manager errors for every helper).
  */
 define('ui/components/cluster-driver/driver-rackspacespot/component', [
   'exports',
@@ -33,35 +33,118 @@ define('ui/components/cluster-driver/driver-rackspacespot/component', [
     onDemandNodeCount:       1,
   };
 
-  // Pre-compiled with ember-source@3.24.7.
-  // Upvars: saveButtonLabel, config, action, errorMessage, if,
-  //         isCalicoSelected, isFlannelSelected, saving
-  var COMPILED_TEMPLATE = {"id":"BQWYwZCT","block":"{\"symbols\":[],\"statements\":[[10,\"div\"],[14,0,\"driver-rackspacespot\"],[12],[2,\"\\n\"],[6,[37,4],[[35,3]],null,[[\"default\"],[{\"statements\":[[2,\"  \"],[10,\"div\"],[14,0,\"banner bg-error mb-10\"],[12],[10,\"p\"],[12],[1,[34,3]],[13],[13],[2,\"\\n\"]],\"parameters\":[]}]]],[2,\"\\n  \"],[10,\"h3\"],[12],[2,\"Authentication\"],[13],[2,\"\\n  \"],[10,\"div\"],[14,0,\"row\"],[12],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-6\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label required\"],[12],[2,\"Refresh Token\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"rackspaceSpotRefreshToken\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"rackspaceSpotRefreshToken\"],[[\"value\"],[\"target.value\"]]]],[14,\"placeholder\",\"Rackspace Spot refresh token\"],[14,0,\"form-control\"],[14,4,\"password\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-6\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label required\"],[12],[2,\"Organization\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"rackspaceSpotOrganization\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"rackspaceSpotOrganization\"],[[\"value\"],[\"target.value\"]]]],[14,\"placeholder\",\"your-org-name\"],[14,0,\"form-control\"],[14,4,\"text\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n  \"],[13],[2,\"\\n\\n  \"],[10,\"h3\"],[14,5,\"margin-top:20px\"],[12],[2,\"Cluster\"],[13],[2,\"\\n  \"],[10,\"div\"],[14,0,\"row\"],[12],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Region\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"rackspaceSpotRegion\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"rackspaceSpotRegion\"],[[\"value\"],[\"target.value\"]]]],[14,0,\"form-control\"],[14,4,\"text\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Kubernetes Version\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"kubernetesVersion\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"kubernetesVersion\"],[[\"value\"],[\"target.value\"]]]],[14,0,\"form-control\"],[14,4,\"text\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"CNI\"],[13],[2,\"\\n      \"],[10,\"select\"],[14,0,\"form-control\"],[15,\"onchange\",[30,[36,2],[[32,0],\"setCNI\"],[[\"value\"],[\"target.value\"]]]],[12],[2,\"\\n        \"],[10,\"option\"],[14,2,\"calico\"],[15,\"selected\",[34,5]],[12],[2,\"calico\"],[13],[2,\"\\n        \"],[10,\"option\"],[14,2,\"flannel\"],[15,\"selected\",[34,6]],[12],[2,\"flannel\"],[13],[2,\"\\n      \"],[13],[2,\"\\n    \"],[13],[2,\"\\n  \"],[13],[2,\"\\n  \"],[10,\"div\"],[14,0,\"row\"],[14,5,\"margin-top:10px\"],[12],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"GPU Enabled\"],[13],[2,\"\\n      \"],[10,\"div\"],[12],[2,\"\\n        \"],[10,\"input\"],[15,\"checked\",[34,1,[\"gpuEnabled\"]]],[15,\"onchange\",[30,[36,2],[[32,0],\"setField\",\"gpuEnabled\"],[[\"value\"],[\"target.checked\"]]]],[14,4,\"checkbox\"],[12],[13],[2,\"\\n        \"],[10,\"span\"],[14,5,\"margin-left:6px\"],[12],[2,\"Enable GPU support\"],[13],[2,\"\\n      \"],[13],[2,\"\\n    \"],[13],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Preemption Webhook URL\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"preemptionWebhookUrl\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"preemptionWebhookUrl\"],[[\"value\"],[\"target.value\"]]]],[14,\"placeholder\",\"https://...\"],[14,0,\"form-control\"],[14,4,\"text\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Deployment Type\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"deploymentType\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"deploymentType\"],[[\"value\"],[\"target.value\"]]]],[14,\"placeholder\",\"optional\"],[14,0,\"form-control\"],[14,4,\"text\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n  \"],[13],[2,\"\\n\\n  \"],[10,\"h3\"],[14,5,\"margin-top:20px\"],[12],[2,\"Spot Node Pool\"],[13],[2,\"\\n  \"],[10,\"div\"],[14,0,\"row\"],[12],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Pool Name\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"spotNodePoolName\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"spotNodePoolName\"],[[\"value\"],[\"target.value\"]]]],[14,0,\"form-control\"],[14,4,\"text\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Server Class\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"spotServerClass\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"spotServerClass\"],[[\"value\"],[\"target.value\"]]]],[14,0,\"form-control\"],[14,4,\"text\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Node Count\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"spotNodeCount\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setNumber\",\"spotNodeCount\"],[[\"value\"],[\"target.value\"]]]],[14,\"min\",\"0\"],[14,0,\"form-control\"],[14,4,\"number\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n  \"],[13],[2,\"\\n  \"],[10,\"div\"],[14,0,\"row\"],[14,5,\"margin-top:10px\"],[12],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Bid Price (USD/hr)\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"spotBidPrice\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"spotBidPrice\"],[[\"value\"],[\"target.value\"]]]],[14,\"placeholder\",\"0.50\"],[14,0,\"form-control\"],[14,4,\"text\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Enable Autoscaling\"],[13],[2,\"\\n      \"],[10,\"div\"],[12],[2,\"\\n        \"],[10,\"input\"],[15,\"checked\",[34,1,[\"spotAutoscalingEnabled\"]]],[15,\"onchange\",[30,[36,2],[[32,0],\"setField\",\"spotAutoscalingEnabled\"],[[\"value\"],[\"target.checked\"]]]],[14,4,\"checkbox\"],[12],[13],[2,\"\\n        \"],[10,\"span\"],[14,5,\"margin-left:6px\"],[12],[2,\"Autoscale spot nodes\"],[13],[2,\"\\n      \"],[13],[2,\"\\n    \"],[13],[2,\"\\n  \"],[13],[2,\"\\n\"],[6,[37,4],[[35,1,[\"spotAutoscalingEnabled\"]]],null,[[\"default\"],[{\"statements\":[[2,\"  \"],[10,\"div\"],[14,0,\"row\"],[14,5,\"margin-top:10px\"],[12],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Min Nodes\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"spotAutoscalingMinNodes\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setNumber\",\"spotAutoscalingMinNodes\"],[[\"value\"],[\"target.value\"]]]],[14,\"min\",\"0\"],[14,0,\"form-control\"],[14,4,\"number\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Max Nodes\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"spotAutoscalingMaxNodes\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setNumber\",\"spotAutoscalingMaxNodes\"],[[\"value\"],[\"target.value\"]]]],[14,\"min\",\"1\"],[14,0,\"form-control\"],[14,4,\"number\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n  \"],[13],[2,\"\\n\"]],\"parameters\":[]}]]],[2,\"\\n  \"],[10,\"h3\"],[14,5,\"margin-top:20px\"],[12],[2,\"On-Demand Node Pool\"],[13],[2,\"\\n  \"],[10,\"div\"],[14,0,\"row\"],[12],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-12\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Enable On-Demand Pool\"],[13],[2,\"\\n      \"],[10,\"div\"],[12],[2,\"\\n        \"],[10,\"input\"],[15,\"checked\",[34,1,[\"onDemandEnabled\"]]],[15,\"onchange\",[30,[36,2],[[32,0],\"setField\",\"onDemandEnabled\"],[[\"value\"],[\"target.checked\"]]]],[14,4,\"checkbox\"],[12],[13],[2,\"\\n        \"],[10,\"span\"],[14,5,\"margin-left:6px\"],[12],[2,\"Add stable capacity alongside spot nodes\"],[13],[2,\"\\n      \"],[13],[2,\"\\n    \"],[13],[2,\"\\n  \"],[13],[2,\"\\n\"],[6,[37,4],[[35,1,[\"onDemandEnabled\"]]],null,[[\"default\"],[{\"statements\":[[2,\"  \"],[10,\"div\"],[14,0,\"row\"],[14,5,\"margin-top:10px\"],[12],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Pool Name\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"onDemandNodePoolName\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"onDemandNodePoolName\"],[[\"value\"],[\"target.value\"]]]],[14,0,\"form-control\"],[14,4,\"text\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Server Class\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"onDemandServerClass\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"onDemandServerClass\"],[[\"value\"],[\"target.value\"]]]],[14,0,\"form-control\"],[14,4,\"text\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Node Count\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"onDemandNodeCount\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setNumber\",\"onDemandNodeCount\"],[[\"value\"],[\"target.value\"]]]],[14,\"min\",\"0\"],[14,0,\"form-control\"],[14,4,\"number\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n  \"],[13],[2,\"\\n  \"],[10,\"div\"],[14,0,\"row\"],[14,5,\"margin-top:10px\"],[12],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-4\"],[12],[2,\"\\n      \"],[10,\"label\"],[14,0,\"acc-label\"],[12],[2,\"Price Per Hour (USD)\"],[13],[2,\"\\n      \"],[10,\"input\"],[15,2,[34,1,[\"onDemandPricePerHour\"]]],[15,\"oninput\",[30,[36,2],[[32,0],\"setField\",\"onDemandPricePerHour\"],[[\"value\"],[\"target.value\"]]]],[14,\"placeholder\",\"0.00\"],[14,0,\"form-control\"],[14,4,\"text\"],[12],[13],[2,\"\\n    \"],[13],[2,\"\\n  \"],[13],[2,\"\\n\"]],\"parameters\":[]}]]],[2,\"\\n  \"],[10,\"div\"],[14,0,\"row\"],[14,5,\"margin-top:30px\"],[12],[2,\"\\n    \"],[10,\"div\"],[14,0,\"col span-12\"],[12],[2,\"\\n      \"],[10,\"button\"],[14,0,\"btn bg-primary\"],[15,\"onclick\",[30,[36,2],[[32,0],\"save\"],null]],[15,\"disabled\",[34,7]],[12],[2,\"\\n        \"],[6,[37,4],[[35,7]],null,[[\"default\",\"else\"],[{\"statements\":[[2,\"Saving\\u2026\"]],\"parameters\":[]},{\"statements\":[[1,[34,0]]],\"parameters\":[]}]]],[2,\"\\n      \"],[13],[2,\"\\n       \\n      \"],[10,\"button\"],[14,0,\"btn bg-transparent\"],[15,\"onclick\",[30,[36,2],[[32,0],\"cancel\"],null]],[12],[2,\"Cancel\"],[13],[2,\"\\n    \"],[13],[2,\"\\n  \"],[13],[2,\"\\n\"],[13],[2,\"\\n\"]],\"hasEval\":false,\"upvars\":[\"saveButtonLabel\",\"config\",\"action\",\"errorMessage\",\"if\",\"isCalicoSelected\",\"isFlannelSelected\",\"saving\"]}","moduleName":"ui/templates/components/cluster-driver/driver-rackspacespot/component"};
+  // Empty pre-compiled template — no opcodes, no helper lookups.
+  var EMPTY_LAYOUT = {"id":"iiOJ48wv","block":"{\"symbols\":[],\"statements\":[],\"hasEval\":false,\"upvars\":[]}","moduleName":"empty"};
 
   var Component     = (_component    && _component.default)    || _component;
   var ClusterDriver = (_clusterDriver && _clusterDriver.default) || _clusterDriver;
-  var layout        = Ember.HTMLBars.template(COMPILED_TEMPLATE);
+
+  var layout = null;
+  try { layout = Ember.HTMLBars.template(EMPTY_LAYOUT); } catch(e) {}
+
+  function esc(v) {
+    return String(v === null || v === undefined ? '' : v)
+      .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function buildHTML(config) {
+    function v(k) { return esc(config ? config.get(k) : DEFAULTS[k]); }
+    function chk(k) { return (config ? config.get(k) : DEFAULTS[k]) ? ' checked' : ''; }
+    function sel(k, val) { return (config ? (config.get(k) || 'calico') : 'calico') === val ? ' selected' : ''; }
+
+    var autoVis  = (config ? config.get('spotAutoscalingEnabled') : false) ? '' : 'display:none';
+    var demandVis = (config ? config.get('onDemandEnabled') : false) ? '' : 'display:none';
+
+    return '<div class="driver-rackspacespot">'
+      + '<div id="rsp-errors" class="banner bg-error mb-10" style="display:none"><p id="rsp-error-text"></p></div>'
+
+      + '<h3>Authentication</h3>'
+      + '<div class="row">'
+      +   '<div class="col span-6"><label class="acc-label required">Refresh Token</label>'
+      +     '<input id="rsp-token" type="password" class="form-control" placeholder="Rackspace Spot refresh token" value="' + v('rackspaceSpotRefreshToken') + '"></div>'
+      +   '<div class="col span-6"><label class="acc-label required">Organization</label>'
+      +     '<input id="rsp-org" type="text" class="form-control" placeholder="your-org-name" value="' + v('rackspaceSpotOrganization') + '"></div>'
+      + '</div>'
+
+      + '<h3 style="margin-top:20px">Cluster</h3>'
+      + '<div class="row">'
+      +   '<div class="col span-4"><label class="acc-label">Region</label>'
+      +     '<input id="rsp-region" type="text" class="form-control" value="' + v('rackspaceSpotRegion') + '"></div>'
+      +   '<div class="col span-4"><label class="acc-label">Kubernetes Version</label>'
+      +     '<input id="rsp-k8s" type="text" class="form-control" value="' + v('kubernetesVersion') + '"></div>'
+      +   '<div class="col span-4"><label class="acc-label">CNI</label>'
+      +     '<select id="rsp-cni" class="form-control">'
+      +       '<option value="calico"' + sel('cni','calico') + '>calico</option>'
+      +       '<option value="flannel"' + sel('cni','flannel') + '>flannel</option>'
+      +     '</select></div>'
+      + '</div>'
+      + '<div class="row" style="margin-top:10px">'
+      +   '<div class="col span-4"><label class="acc-label">GPU Enabled</label><div>'
+      +     '<input id="rsp-gpu" type="checkbox"' + chk('gpuEnabled') + '>'
+      +     '<span style="margin-left:6px">Enable GPU support</span></div></div>'
+      +   '<div class="col span-4"><label class="acc-label">Preemption Webhook URL</label>'
+      +     '<input id="rsp-webhook" type="text" class="form-control" placeholder="https://..." value="' + v('preemptionWebhookUrl') + '"></div>'
+      +   '<div class="col span-4"><label class="acc-label">Deployment Type</label>'
+      +     '<input id="rsp-deploy" type="text" class="form-control" placeholder="optional" value="' + v('deploymentType') + '"></div>'
+      + '</div>'
+
+      + '<h3 style="margin-top:20px">Spot Node Pool</h3>'
+      + '<div class="row">'
+      +   '<div class="col span-4"><label class="acc-label">Pool Name</label>'
+      +     '<input id="rsp-spname" type="text" class="form-control" value="' + v('spotNodePoolName') + '"></div>'
+      +   '<div class="col span-4"><label class="acc-label">Server Class</label>'
+      +     '<input id="rsp-spclass" type="text" class="form-control" value="' + v('spotServerClass') + '"></div>'
+      +   '<div class="col span-4"><label class="acc-label">Node Count</label>'
+      +     '<input id="rsp-spcount" type="number" class="form-control" min="0" value="' + v('spotNodeCount') + '"></div>'
+      + '</div>'
+      + '<div class="row" style="margin-top:10px">'
+      +   '<div class="col span-4"><label class="acc-label">Bid Price (USD/hr)</label>'
+      +     '<input id="rsp-bid" type="text" class="form-control" placeholder="0.50" value="' + v('spotBidPrice') + '"></div>'
+      +   '<div class="col span-4"><label class="acc-label">Enable Autoscaling</label><div>'
+      +     '<input id="rsp-autoscale" type="checkbox"' + chk('spotAutoscalingEnabled') + '>'
+      +     '<span style="margin-left:6px">Autoscale spot nodes</span></div></div>'
+      + '</div>'
+      + '<div id="rsp-autoscale-section" class="row" style="margin-top:10px;' + autoVis + '">'
+      +   '<div class="col span-4"><label class="acc-label">Min Nodes</label>'
+      +     '<input id="rsp-amin" type="number" class="form-control" min="0" value="' + v('spotAutoscalingMinNodes') + '"></div>'
+      +   '<div class="col span-4"><label class="acc-label">Max Nodes</label>'
+      +     '<input id="rsp-amax" type="number" class="form-control" min="1" value="' + v('spotAutoscalingMaxNodes') + '"></div>'
+      + '</div>'
+
+      + '<h3 style="margin-top:20px">On-Demand Node Pool</h3>'
+      + '<div class="row">'
+      +   '<div class="col span-12"><label class="acc-label">Enable On-Demand Pool</label><div>'
+      +     '<input id="rsp-ondemand" type="checkbox"' + chk('onDemandEnabled') + '>'
+      +     '<span style="margin-left:6px">Add stable capacity alongside spot nodes</span></div></div>'
+      + '</div>'
+      + '<div id="rsp-demand-section" style="' + demandVis + '">'
+      +   '<div class="row" style="margin-top:10px">'
+      +     '<div class="col span-4"><label class="acc-label">Pool Name</label>'
+      +       '<input id="rsp-odname" type="text" class="form-control" value="' + v('onDemandNodePoolName') + '"></div>'
+      +     '<div class="col span-4"><label class="acc-label">Server Class</label>'
+      +       '<input id="rsp-odclass" type="text" class="form-control" value="' + v('onDemandServerClass') + '"></div>'
+      +     '<div class="col span-4"><label class="acc-label">Node Count</label>'
+      +       '<input id="rsp-odcount" type="number" class="form-control" min="0" value="' + v('onDemandNodeCount') + '"></div>'
+      +   '</div>'
+      +   '<div class="row" style="margin-top:10px">'
+      +     '<div class="col span-4"><label class="acc-label">Price Per Hour (USD)</label>'
+      +       '<input id="rsp-odprice" type="text" class="form-control" placeholder="0.00" value="' + v('onDemandPricePerHour') + '"></div>'
+      +   '</div>'
+      + '</div>'
+
+      + '<div class="row" style="margin-top:30px">'
+      +   '<div class="col span-12">'
+      +     '<button id="rsp-save" class="btn bg-primary">Create</button>'
+      +     '&nbsp;'
+      +     '<button id="rsp-cancel" class="btn bg-transparent">Cancel</button>'
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+  }
 
   exports.default = Component.extend(ClusterDriver, {
     layout:     layout,
     driverName: DRIVER,
-
-    config: Ember.computed('cluster.genericEngineConfig', function() {
-      return this.get('cluster.genericEngineConfig');
-    }),
-
-    errorMessage: Ember.computed('errors.[]', function() {
-      var errors = this.get('errors') || [];
-      return errors.length ? errors.join(' ') : null;
-    }),
-
-    isCalicoSelected: Ember.computed('config.cni', function() {
-      return (this.get('config.cni') || 'calico') === 'calico';
-    }),
-
-    isFlannelSelected: Ember.computed('config.cni', function() {
-      return this.get('config.cni') === 'flannel';
-    }),
 
     init: function() {
       this._super.apply(this, arguments);
@@ -81,6 +164,88 @@ define('ui/components/cluster-driver/driver-rackspacespot/component', [
       });
     },
 
+    didInsertElement: function() {
+      this._super.apply(this, arguments);
+      var config = this.get('config') || this.get('cluster.genericEngineConfig');
+      var el = this.element;
+      el.innerHTML = buildHTML(config);
+      this._wire(el, config);
+    },
+
+    _wire: function(el, config) {
+      var self = this;
+
+      function txt(id, field) {
+        var inp = el.querySelector('#' + id);
+        if (inp) inp.addEventListener('input', function(e) { config.set(field, e.target.value); });
+      }
+      function num(id, field) {
+        var inp = el.querySelector('#' + id);
+        if (inp) inp.addEventListener('input', function(e) { config.set(field, parseInt(e.target.value, 10) || 0); });
+      }
+      function chk(id, field, onChange) {
+        var inp = el.querySelector('#' + id);
+        if (inp) inp.addEventListener('change', function(e) {
+          config.set(field, e.target.checked);
+          if (onChange) onChange(e.target.checked);
+        });
+      }
+
+      txt('rsp-token',   'rackspaceSpotRefreshToken');
+      txt('rsp-org',     'rackspaceSpotOrganization');
+      txt('rsp-region',  'rackspaceSpotRegion');
+      txt('rsp-k8s',     'kubernetesVersion');
+      txt('rsp-webhook', 'preemptionWebhookUrl');
+      txt('rsp-deploy',  'deploymentType');
+      txt('rsp-spname',  'spotNodePoolName');
+      txt('rsp-spclass', 'spotServerClass');
+      txt('rsp-bid',     'spotBidPrice');
+      txt('rsp-odname',  'onDemandNodePoolName');
+      txt('rsp-odclass', 'onDemandServerClass');
+      txt('rsp-odprice', 'onDemandPricePerHour');
+
+      num('rsp-spcount', 'spotNodeCount');
+      num('rsp-amin',    'spotAutoscalingMinNodes');
+      num('rsp-amax',    'spotAutoscalingMaxNodes');
+      num('rsp-odcount', 'onDemandNodeCount');
+
+      var cni = el.querySelector('#rsp-cni');
+      if (cni) cni.addEventListener('change', function(e) { config.set('cni', e.target.value); });
+
+      chk('rsp-gpu', 'gpuEnabled');
+      chk('rsp-autoscale', 'spotAutoscalingEnabled', function(v) {
+        var s = el.querySelector('#rsp-autoscale-section');
+        if (s) s.style.display = v ? '' : 'none';
+      });
+      chk('rsp-ondemand', 'onDemandEnabled', function(v) {
+        var s = el.querySelector('#rsp-demand-section');
+        if (s) s.style.display = v ? '' : 'none';
+      });
+
+      var saveBtn = el.querySelector('#rsp-save');
+      var cancelBtn = el.querySelector('#rsp-cancel');
+      if (saveBtn) saveBtn.addEventListener('click', function() { self.send('save'); });
+      if (cancelBtn) cancelBtn.addEventListener('click', function() { self.send('cancel'); });
+    },
+
+    config: Ember.computed('cluster.genericEngineConfig', function() {
+      return this.get('cluster.genericEngineConfig');
+    }),
+
+    showErrors: function(errors) {
+      var el = this.element;
+      if (!el) return;
+      var box = el.querySelector('#rsp-errors');
+      var txt = el.querySelector('#rsp-error-text');
+      if (!box || !txt) return;
+      if (errors && errors.length) {
+        txt.textContent = errors.join(' ');
+        box.style.display = '';
+      } else {
+        box.style.display = 'none';
+      }
+    },
+
     validate: function() {
       this._super.apply(this, arguments);
 
@@ -95,6 +260,7 @@ define('ui/components/cluster-driver/driver-rackspacespot/component', [
       }
 
       this.set('errors', errors);
+      this.showErrors(errors);
       return errors.length === 0;
     },
 
@@ -104,18 +270,6 @@ define('ui/components/cluster-driver/driver-rackspacespot/component', [
       },
       cancel: function() {
         this.send('driverCancel');
-      },
-      setCNI: function(val) {
-        var config = this.get('config');
-        if (config) { config.set('cni', val); }
-      },
-      setField: function(field, value) {
-        var config = this.get('config');
-        if (config) { config.set(field, value); }
-      },
-      setNumber: function(field, value) {
-        var config = this.get('config');
-        if (config) { config.set(field, parseInt(value, 10) || 0); }
       },
     },
   });
