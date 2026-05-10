@@ -22,7 +22,7 @@ This driver lets you create, scale, and delete Rackspace Spot **CloudSpaces** (m
 
 | Requirement | Details |
 |---|---|
-| Rancher | v2.6 or later |
+| Rancher | v2.7 or later (v2.11+ recommended; UI extension requires Dashboard) |
 | Rackspace Spot account | With at least one organization created |
 | Rackspace Spot refresh token | See [Getting a refresh token](#getting-a-refresh-token) |
 
@@ -140,6 +140,8 @@ Run `rxtspot server-classes list` to see classes available in your region, or vi
 
 ## Building from source
 
+### Driver binary
+
 ```bash
 git clone https://github.com/teamzuzu/rancher-rackspace-spot-driver
 cd rancher-rackspace-spot-driver
@@ -158,7 +160,7 @@ make test
 make image
 ```
 
-### Local driver testing with Rancher
+#### Local driver testing with Rancher
 
 You can host the driver binary on any HTTPS server and point Rancher at it. A quick way during development:
 
@@ -170,22 +172,54 @@ ngrok http 9999
 # Use the ngrok HTTPS URL as the download URL in Rancher
 ```
 
+### Custom UI extension
+
+The cluster configuration form is a [Rancher UI Extension](https://extensions.rancher.io) built with Vue and [`@rancher/shell`](https://github.com/rancher/shell) 3.0.8. The source lives in `ui/pkg/rackspacespot/`.
+
+```bash
+cd ui
+yarn install
+
+# Build the extension bundle
+yarn build-pkg rackspacespot
+# Output: dist-pkg/rackspacespot-0.0.1/rackspacespot-0.0.1.umd.min.js
+```
+
+The built bundle is checked in to `docs/ui/component.js` and served via GitHub Pages — the **Custom UI URL** in Rancher does not need to change between releases.
+
+To update the deployed UI after making changes:
+
+```bash
+cd ui
+yarn build-pkg rackspacespot
+cp dist-pkg/rackspacespot-0.0.1/rackspacespot-0.0.1.umd.min.js ../docs/ui/component.js
+git add ../docs/ui/component.js && git commit -m "chore: rebuild UI bundle"
+```
+
+CI (`pages.yml`) does this automatically on every push to `main`.
+
 ---
 
 ## Architecture
 
 ```
-Rancher → gRPC → rancher-rackspace-spot-driver
-                        │
-                        ├─ Create  → CreateCloudspace + CreateSpotNodePool
-                        ├─ PostCheck → WaitForRunning + GetKubeconfig + ServiceAccount
-                        ├─ Update  → UpdateSpotNodePool (scale / bid price)
-                        └─ Remove  → DeleteNodePools + DeleteCloudspace
+Browser (Rancher Dashboard)
+  └─ Vue UI Extension (ui/pkg/rackspacespot/) ─── served from GitHub Pages
+        │ writes genericEngineConfig
+        ▼
+Rancher API → gRPC → rancher-rackspace-spot-driver (Go binary)
+                              │
+                              ├─ Create    → CreateCloudspace + CreateSpotNodePool
+                              ├─ PostCheck → WaitForRunning + GetKubeconfig + ServiceAccount
+                              ├─ Update    → UpdateSpotNodePool (scale / bid price)
+                              └─ Remove    → DeleteNodePools + DeleteCloudspace
 ```
 
 The driver binary is started by Rancher as a sidecar process. Rancher communicates with it over a local gRPC socket, then terminates it when the operation completes.
 
 State (organization, cloudspace name, pool configuration) is serialised as JSON into `ClusterInfo.Metadata` and passed back on every subsequent call, so the driver is fully stateless between invocations.
+
+The UI extension (`ui/`) is a separate build artifact compiled with `@rancher/shell` 3.0.8. It is registered as a `kontainer` provisioner and writes cluster config into `cluster.genericEngineConfig`, which Rancher passes through to the driver binary.
 
 ---
 
