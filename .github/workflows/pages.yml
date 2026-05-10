@@ -32,8 +32,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: ui/.nvmrc
-          cache: yarn
-          cache-dependency-path: ui/yarn.lock
 
       - name: Install yarn
         run: npm install -g yarn
