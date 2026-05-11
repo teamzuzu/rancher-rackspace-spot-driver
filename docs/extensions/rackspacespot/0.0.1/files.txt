@@ -1,3 +1,4 @@
 files.txt
 plugin/package.json
+plugin/rackspacespot-0.0.1.umd.min.60.js
 plugin/rackspacespot-0.0.1.umd.min.js

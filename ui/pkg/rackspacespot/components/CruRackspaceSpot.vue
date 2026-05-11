@@ -1,10 +1,29 @@
 <template>
-  <div class="driver-rackspacespot">
+  <CruResource
+    :mode="mode"
+    :resource="value"
+    :errors="errors"
+    :validation-passed="validationPassed"
+    @finish="save"
+    @cancel="cancel"
+  >
     <Banner
-      v-if="validationErrors.length"
+      v-if="errors.length"
       color="error"
-      :label="validationErrors.join(' | ')"
+      :label="errors.join(' | ')"
     />
+
+    <!-- ── Cluster name ───────────────────────────────────── -->
+    <div class="row mb-20">
+      <div class="col span-6">
+        <LabeledInput
+          v-model:value="clusterName"
+          label="Cluster Name"
+          :required="true"
+          :mode="mode"
+        />
+      </div>
+    </div>
 
     <!-- ── Authentication ─────────────────────────────────── -->
     <h3>Authentication</h3>
@@ -126,7 +145,10 @@
         />
       </div>
     </div>
-    <div v-if="config.spotAutoscalingEnabled" class="row mt-10">
+    <div
+      v-if="config.spotAutoscalingEnabled"
+      class="row mt-10"
+    >
       <div class="col span-4">
         <LabeledInput
           v-model:value="config.spotAutoscalingMinNodes"
@@ -195,15 +217,16 @@
         </div>
       </div>
     </template>
-  </div>
+  </CruResource>
 </template>
 
 <script>
 import { defineComponent } from 'vue';
-import Banner        from '@components/Banner/Banner';
-import LabeledInput  from '@components/Form/LabeledInput/LabeledInput';
-import LabeledSelect from '@shell/components/form/LabeledSelect';
-import Checkbox      from '@components/Form/Checkbox/Checkbox';
+import CruResource       from '@shell/components/CruResource';
+import Banner            from '@components/Banner/Banner';
+import LabeledInput      from '@components/Form/LabeledInput/LabeledInput';
+import LabeledSelect     from '@shell/components/form/LabeledSelect';
+import Checkbox          from '@components/Form/Checkbox/Checkbox';
 
 const DRIVER   = 'rackspacespot';
 const DEFAULTS = {
@@ -228,6 +251,7 @@ export default defineComponent({
   name: 'CruRackspaceSpot',
 
   components: {
+    CruResource,
     Banner,
     LabeledInput,
     LabeledSelect,
@@ -235,7 +259,6 @@ export default defineComponent({
   },
 
   props: {
-    // provisioning.cattle.io.cluster or management.cattle.io.cluster value
     value: {
       type:    Object,
       default: () => ({}),
@@ -250,8 +273,10 @@ export default defineComponent({
 
   data() {
     return {
-      validationErrors: [],
-      cniOptions:       [
+      clusterName: this.value?.metadata?.name || '',
+      config:      { ...DEFAULTS, ...(this.value?.genericEngineConfig || {}) },
+      errors:      [],
+      cniOptions:  [
         { label: 'calico', value: 'calico' },
         { label: 'flannel', value: 'flannel' },
       ],
@@ -259,39 +284,61 @@ export default defineComponent({
   },
 
   computed: {
-    // Reactive proxy into value.genericEngineConfig with defaults merged in.
-    config() {
-      if (!this.value.genericEngineConfig) {
-        // Initialise on first access so Vue can track it reactively.
-        this.$set
-          ? this.$set(this.value, 'genericEngineConfig', { ...DEFAULTS })
-          : (this.value.genericEngineConfig = { ...DEFAULTS });
-      }
-
-      // Backfill any missing keys without overwriting user data.
-      const cfg = this.value.genericEngineConfig;
-      Object.keys(DEFAULTS).forEach((k) => {
-        if (cfg[k] === undefined || cfg[k] === null) {
-          const set = this.$set || ((obj, key, val) => { obj[key] = val; });
-          set(cfg, k, DEFAULTS[k]);
-        }
-      });
-
-      return cfg;
+    validationPassed() {
+      return !!(this.clusterName && this.config.rackspaceSpotRefreshToken && this.config.rackspaceSpotOrganization);
     },
   },
 
   methods: {
-    // Called by the parent provisioner / CruResource before the cluster is saved.
-    validate() {
-      this.validationErrors = [];
+    async save(btnCb) {
+      this.errors = [];
+
+      if (!this.clusterName) {
+        this.errors = ['Cluster Name is required'];
+        if (btnCb) btnCb(false);
+        return;
+      }
       if (!this.config.rackspaceSpotRefreshToken) {
-        this.validationErrors.push('Refresh Token is required');
+        this.errors = ['Refresh Token is required'];
+        if (btnCb) btnCb(false);
+        return;
       }
       if (!this.config.rackspaceSpotOrganization) {
-        this.validationErrors.push('Organization is required');
+        this.errors = ['Organization is required'];
+        if (btnCb) btnCb(false);
+        return;
       }
-      return this.validationErrors.length === 0;
+
+      try {
+        const cfg = { ...this.config };
+
+        if (this.value?.id) {
+          const existing = await this.$store.dispatch('rancher/find', {
+            type: 'cluster',
+            id:   this.value.id,
+            opt:  { force: true },
+          });
+          existing.genericEngineConfig = cfg;
+          await existing.save();
+        } else {
+          const cluster = await this.$store.dispatch('rancher/create', {
+            type:                'cluster',
+            name:                this.clusterName,
+            genericEngineConfig: cfg,
+          });
+          await cluster.save();
+        }
+
+        if (btnCb) btnCb(true);
+        this.$router.push({ name: 'c-cluster-manager' });
+      } catch (e) {
+        this.errors = [e?.message || 'Failed to save cluster'];
+        if (btnCb) btnCb(false);
+      }
+    },
+
+    cancel() {
+      this.$router.back();
     },
   },
 });
@@ -301,6 +348,7 @@ export default defineComponent({
 .driver-rackspacespot {
   padding: 10px 0;
 }
-.mt-10 { margin-top: 10px; }
-.mt-20 { margin-top: 20px; }
+.mt-10  { margin-top: 10px; }
+.mt-20  { margin-top: 20px; }
+.mb-20  { margin-bottom: 20px; }
 </style>
