@@ -22,7 +22,7 @@ This driver lets you create, scale, and delete Rackspace Spot **CloudSpaces** (m
 
 | Requirement | Details |
 |---|---|
-| Rancher | v2.7 or later (v2.11+ recommended; UI extension requires Dashboard) |
+| Rancher | v2.10 or later (UI extension requires Dashboard v2.10+) |
 | Rackspace Spot account | With at least one organization created |
 | Rackspace Spot refresh token | See [Getting a refresh token](#getting-a-refresh-token) |
 
@@ -50,26 +50,43 @@ Keep the refresh token — you'll paste it into Rancher when creating a cluster.
 
 ## Installing the driver in Rancher
 
-### Step 1 — Add the cluster driver
+The driver and its UI extension are distributed as a Helm chart via a GitHub Pages Helm repository.
 
-1. Open the Rancher UI and navigate to **☰ → Cluster Management**.
-2. Select **Drivers** from the left sidebar, then click the **Cluster Drivers** tab.
-3. Click **Add Cluster Driver**.
-4. Fill in the form:
+### Step 1 — Add the extension repository
+
+1. Open the Rancher UI and navigate to **☰ → Extensions**.
+2. Click **⋮ → Manage Extension Repositories**.
+3. Click **Create** and fill in:
 
    | Field | Value |
    |---|---|
-   | **Download URL** | `https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/download/v0.0.5/rancher-rackspace-spot-driver_linux_amd64.tar.gz` |
-   | **Custom UI URL** | `https://teamzuzu.github.io/rancher-rackspace-spot-driver/ui/component.js` |
-   | **Whitelist Domains** | `spot.rackspace.com` |
+   | **Name** | `rackspace-spot` |
+   | **URL** | `https://teamzuzu.github.io/rancher-rackspace-spot-driver` |
 
-   > Replace `v0.0.5` with the [latest release](https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/latest) tag.
+4. Click **Create**.
 
-   > The **Custom UI URL** provides the configuration form in Rancher's Dashboard (v2.7+). Without it, no fields or Save button appear.
+Alternatively, install via Helm directly:
 
-5. Click **Create** and wait for the driver status to change to **Active** (takes ~30 seconds while Rancher downloads and validates the binary).
+```bash
+helm repo add rackspace-spot https://teamzuzu.github.io/rancher-rackspace-spot-driver
+helm repo update
+helm install rackspacespot rackspace-spot/rackspacespot \
+  --namespace cattle-ui-plugin-system \
+  --create-namespace
+```
 
-### Step 2 — Create a cluster
+### Step 2 — Install the extension
+
+1. Navigate to **☰ → Extensions → Available**.
+2. Find **Rackspace Spot** and click **Install**.
+
+Rancher installs the Helm chart, which registers:
+- A `KontainerDriver` — tells Rancher where to download the binary
+- A `UIPlugin` — tells Rancher's Dashboard where to load the UI extension from
+
+The cluster driver status changes to **Active** within ~30 seconds.
+
+### Step 3 — Create a cluster
 
 1. Navigate to **☰ → Cluster Management → Clusters → Create**.
 2. Choose **Rackspace Spot** from the provider list.
@@ -80,7 +97,15 @@ Rancher will call the driver, which creates the CloudSpace and node pools. The c
 
 ### Upgrading the driver
 
-To upgrade to a newer driver version, edit the cluster driver (Rancher UI → Cluster Drivers → ⋮ → Edit) and update the **Download URL** to the new release tarball. Existing clusters are unaffected — the driver version only matters when Rancher makes a new API call.
+To upgrade, update the repository and upgrade the Helm chart:
+
+```bash
+helm repo update rackspace-spot
+helm upgrade rackspacespot rackspace-spot/rackspacespot \
+  --namespace cattle-ui-plugin-system
+```
+
+Or via **☰ → Extensions → Installed → Rackspace Spot → ⋮ → Upgrade**.
 
 ---
 
@@ -172,31 +197,19 @@ ngrok http 9999
 # Use the ngrok HTTPS URL as the download URL in Rancher
 ```
 
-### Custom UI extension
+### UI extension
 
 The cluster configuration form is a [Rancher UI Extension](https://extensions.rancher.io) built with Vue and [`@rancher/shell`](https://github.com/rancher/shell) 3.0.8. The source lives in `ui/pkg/rackspacespot/`.
 
 ```bash
 cd ui
-yarn install
+npm install --legacy-peer-deps
 
-# Build the extension bundle
-yarn build-pkg rackspacespot
-# Output: dist-pkg/rackspacespot-0.0.1/rackspacespot-0.0.1.umd.min.js
+# Build the extension bundle (outputs to dist-pkg/rackspacespot-<version>/)
+npm run build-pkg rackspacespot
 ```
 
-The built bundle is checked in to `docs/ui/component.js` and served via GitHub Pages — the **Custom UI URL** in Rancher does not need to change between releases.
-
-To update the deployed UI after making changes:
-
-```bash
-cd ui
-yarn build-pkg rackspacespot
-cp dist-pkg/rackspacespot-0.0.1/rackspacespot-0.0.1.umd.min.js ../docs/ui/component.js
-git add ../docs/ui/component.js && git commit -m "chore: rebuild UI bundle"
-```
-
-CI (`pages.yml`) does this automatically on every push to `main`.
+The extension is distributed via the Helm repository and loaded by Rancher's UIPlugin mechanism — no manual file copying required. The release workflow (`release.yml`) builds the extension, packages the Helm chart, and publishes the extension files to GitHub Pages automatically on every release.
 
 ---
 

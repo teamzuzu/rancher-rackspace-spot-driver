@@ -14,10 +14,10 @@ on:
         type: boolean
 
 permissions:
-  contents: write       # create GitHub releases, upload assets, push tags, commit README
+  contents: write       # create GitHub releases, upload assets, push tags, commit docs
   packages: write       # push to GitHub Container Registry
   id-token: write       # needed by some OIDC-based actions
-  actions: write        # trigger the Deploy Docs workflow after README update
+  actions: write        # trigger the Deploy Docs workflow
 
 jobs:
   validate:
@@ -123,9 +123,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  update-readme:
-    name: Update README & trigger docs rebuild
-    needs: [validate, goreleaser, docker]
+  release-docs:
+    name: Build UI extension, package chart, update docs
+    needs: [validate, tag, goreleaser]
     runs-on: [self-hosted, anchovy]
     steps:
       - uses: actions/checkout@v6
@@ -138,22 +138,108 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ui/.nvmrc
+
+      - name: Install UI dependencies
+        working-directory: ui
+        run: npm install --legacy-peer-deps
+
+      - name: Set extension version
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          VER="${VERSION#v}"
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${VER}\"/" ui/pkg/rackspacespot/package.json
+
+      - name: Build UI extension
+        working-directory: ui
+        run: npm run build-pkg rackspacespot
+
+      - name: Copy extension files to docs
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          VER="${VERSION#v}"
+          PLUGIN_DIR="docs/extensions/rackspacespot/${VER}/plugin"
+          mkdir -p "${PLUGIN_DIR}"
+          cp ui/dist-pkg/rackspacespot-${VER}/* "${PLUGIN_DIR}/"
+          # Generate files.txt listing all files under the versioned dir
+          (cd "docs/extensions/rackspacespot/${VER}" && find * -type f | sort) \
+            > "docs/extensions/rackspacespot/${VER}/files.txt"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.0
+
+      - name: Get binary checksum
+        id: checksum
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          gh release download "${VERSION}" \
+            --pattern "checksums.txt" \
+            --dir /tmp/release-checksums \
+            --repo "${GITHUB_REPOSITORY}"
+          CHECKSUM=$(grep "rancher-rackspace-spot-driver_linux_amd64.tar.gz" \
+            /tmp/release-checksums/checksums.txt | awk '{print $1}')
+          echo "amd64=${CHECKSUM}" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package Helm chart
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          VER="${VERSION#v}"
+          REPO_OWNER="${GITHUB_REPOSITORY%%/*}"
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          PAGES_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}"
+          BINARY_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION}/rancher-rackspace-spot-driver_linux_amd64.tar.gz"
+          CHECKSUM="${{ steps.checksum.outputs.amd64 }}"
+          ENDPOINT="${PAGES_URL}/extensions/rackspacespot/${VER}"
+
+          # Update values.yaml with release-specific defaults (not committed to git)
+          sed -i "s|  url: \"\"$|  url: \"${BINARY_URL}\"|" deploy/charts/rackspacespot/values.yaml
+          sed -i "s|  checksum: \"\"$|  checksum: \"${CHECKSUM}\"|" deploy/charts/rackspacespot/values.yaml
+          sed -i "s|  endpoint: \"\"$|  endpoint: \"${ENDPOINT}\"|" deploy/charts/rackspacespot/values.yaml
+
+          mkdir -p release_artifacts
+          helm package deploy/charts/rackspacespot \
+            --version "${VER}" \
+            --app-version "${VERSION}" \
+            --destination ./release_artifacts
+
+      - name: Upload Helm chart to release
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          gh release upload "${VERSION}" release_artifacts/rackspacespot-*.tgz \
+            --repo "${GITHUB_REPOSITORY}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Helm repo index
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          CHART_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION}"
+          if [ -f docs/index.yaml ]; then
+            helm repo index ./release_artifacts --merge docs/index.yaml --url "${CHART_URL}"
+          else
+            helm repo index ./release_artifacts --url "${CHART_URL}"
+          fi
+          cp ./release_artifacts/index.yaml ./docs/index.yaml
+
       - name: Update version references in README.md
         run: |
           VERSION="${{ needs.validate.outputs.version }}"
-          # Update the versioned download URL
           sed -i "s|releases/download/v[0-9]\+\.[0-9]\+\.[0-9]\+/|releases/download/${VERSION}/|g" README.md
-          # Update the inline "Replace `vX.Y.Z`" note
           sed -i "s|Replace \`v[0-9]\+\.[0-9]\+\.[0-9]\+\`|Replace \`${VERSION}\`|g" README.md
 
-      - name: Commit and push if changed
+      - name: Commit and push changes
         run: |
           VERSION="${{ needs.validate.outputs.version }}"
-          if git diff --quiet README.md; then
-            echo "README.md already up to date"
+          git add docs/extensions/ docs/index.yaml README.md
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
           else
-            git add README.md
-            git commit -m "docs: update README download URL to ${VERSION} [skip ci]"
+            git commit -m "chore: release ${VERSION} — extension files, chart index, README [skip ci]"
             git push origin main
           fi
 

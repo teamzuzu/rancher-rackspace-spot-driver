@@ -1,0 +1,5 @@
+kontainerDriver:
+  url: ""
+  checksum: ""
+uiPlugin:
+  endpoint: ""

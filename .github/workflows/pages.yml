@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - "docs/**"
-      - "ui/**"
       - "mkdocs.yml"
       - "README.md"
       - ".github/workflows/pages.yml"
@@ -22,38 +21,11 @@ concurrency:
 
 jobs:
   build:
-    name: Build docs + UI extension
+    name: Build docs
     runs-on: [self-hosted, anchovy]
     steps:
       - uses: actions/checkout@v6
 
-      # ── UI Extension ──────────────────────────────────────────
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ui/.nvmrc
-
-      - name: Install UI dependencies
-        working-directory: ui
-        run: npm install --legacy-peer-deps
-
-      - name: Build UI extension
-        working-directory: ui
-        run: npm run build-pkg-standalone rackspacespot
-
-      - name: Copy extension bundle to docs/ui
-        run: |
-          mkdir -p docs/ui
-          # build-pkg outputs to ui/dist-pkg/<name>-<version>/<name>-<version>.umd.min.js
-          JS=$(find ui/dist-pkg -name '*.umd.min.js' 2>/dev/null | head -1)
-          if [ -n "$JS" ]; then
-            cp "$JS" docs/ui/component.js
-            echo "Copied $JS → docs/ui/component.js"
-          else
-            echo "ERROR: could not locate built extension JS"; exit 1
-          fi
-
-      # ── MkDocs ───────────────────────────────────────────────
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
