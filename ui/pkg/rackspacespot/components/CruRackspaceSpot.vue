@@ -273,8 +273,8 @@ export default defineComponent({
 
   data() {
     return {
-      clusterName: this.value?.metadata?.name || '',
-      config:      { ...DEFAULTS, ...(this.value?.genericEngineConfig || {}) },
+      clusterName: this.value?.displayName || this.value?.name || '',
+      config:      { ...DEFAULTS, ...(this.value?.rackspacespotEngineConfig || {}) },
       errors:      [],
       cniOptions:  [
         { label: 'calico', value: 'calico' },
@@ -318,13 +318,13 @@ export default defineComponent({
             id:   this.value.id,
             opt:  { force: true },
           });
-          existing.genericEngineConfig = cfg;
+          existing.rackspacespotEngineConfig = cfg;
           await existing.save();
         } else {
           const cluster = await this.$store.dispatch('rancher/create', {
-            type:                'cluster',
-            name:                this.clusterName,
-            genericEngineConfig: cfg,
+            type:                       'cluster',
+            name:                       this.clusterName,
+            rackspacespotEngineConfig:  cfg,
           });
           await cluster.save();
         }
