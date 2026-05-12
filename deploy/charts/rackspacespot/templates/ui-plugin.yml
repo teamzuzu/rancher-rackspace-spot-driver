@@ -9,7 +9,7 @@ spec:
   plugin:
     name: rackspacespot
     version: {{ trimPrefix "v" .Chart.AppVersion | quote }}
-    endpoint: {{ .Values.uiPlugin.endpoint | quote }}
+    endpoint: {{ default (printf "https://teamzuzu.github.io/rancher-rackspace-spot-driver/extensions/rackspacespot/%s" (trimPrefix "v" .Chart.AppVersion)) .Values.uiPlugin.endpoint | quote }}
     noCache: false
     noAuth: false
     metadata:
