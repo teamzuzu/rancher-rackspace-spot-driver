@@ -231,13 +231,13 @@ import Checkbox          from '@components/Form/Checkbox/Checkbox';
 const DRIVER   = 'rackspacespot';
 const DEFAULTS = {
   driverName:              DRIVER,
-  rackspaceSpotRegion:     'colo-lax-1',
-  kubernetesVersion:       '1.28',
+  rackspaceSpotRegion:     'us-east-iad-1',
+  kubernetesVersion:       '1.33',
   cni:                     'calico',
   gpuEnabled:              false,
   spotNodePoolName:        'spot-pool',
-  spotServerClass:         'rxtx.4xlarge-mi300x',
-  spotNodeCount:           3,
+  spotServerClass:         'ch.vs1.medium-iad',
+  spotNodeCount:           1,
   spotBidPrice:            '0.50',
   spotAutoscalingEnabled:  false,
   spotAutoscalingMinNodes: 1,
