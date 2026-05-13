@@ -12,8 +12,10 @@ import (
 
 // isNotFound works around a SDK inconsistency: the HTTP 404 path returns a plain
 // fmt.Errorf (not *HTTPStatusError), so spotv1.IsNotFound always returns false for it.
+// We avoid calling spotv1.IsNotFound (which uses errors.As) because the SDK error type
+// has an As() method that causes infinite recursion.
 func isNotFound(err error) bool {
-	return isNotFound(err) || (err != nil && strings.Contains(err.Error(), "not found"))
+	return err != nil && strings.Contains(err.Error(), "not found")
 }
 
 type spotClient struct {

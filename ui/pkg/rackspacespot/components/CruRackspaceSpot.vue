@@ -60,9 +60,10 @@
         />
       </div>
       <div class="col span-4">
-        <LabeledInput
+        <LabeledSelect
           v-model:value="config.kubernetesVersion"
           label="Kubernetes Version"
+          :options="k8sVersionOptions"
           :mode="mode"
         />
       </div>
@@ -232,7 +233,7 @@ const DRIVER   = 'rackspacespot';
 const DEFAULTS = {
   driverName:              DRIVER,
   rackspaceSpotRegion:     'us-east-iad-1',
-  kubernetesVersion:       '1.33',
+  kubernetesVersion:       '1.33.0',
   cni:                     'calico',
   gpuEnabled:              false,
   spotNodePoolName:        'spot-pool',
@@ -279,6 +280,13 @@ export default defineComponent({
       cniOptions:  [
         { label: 'calico', value: 'calico' },
         { label: 'flannel', value: 'flannel' },
+      ],
+      k8sVersionOptions: [
+        { label: '1.33.0', value: '1.33.0' },
+        { label: '1.32.9', value: '1.32.9' },
+        { label: '1.31.1', value: '1.31.1' },
+        { label: '1.30.10', value: '1.30.10' },
+        { label: '1.29.6', value: '1.29.6' },
       ],
     };
   },

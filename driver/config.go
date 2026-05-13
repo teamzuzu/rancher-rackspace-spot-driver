@@ -34,7 +34,7 @@ const (
 	flagOnDemandPrice    = "on-demand-price-per-hour"
 
 	defaultRegion      = "colo-lax-1"
-	defaultK8sVersion  = "1.28"
+	defaultK8sVersion  = "1.32.9"
 	defaultCNI         = "calico"
 	defaultSpotPool    = "spot-pool"
 	defaultSpotClass   = "rxtx.4xlarge-mi300x"
