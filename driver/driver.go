@@ -291,7 +291,7 @@ func (d *Driver) PostCheck(ctx context.Context, clusterInfo *types.ClusterInfo) 
 
 	logrus.Infof("[%s] waiting for cloudspace %s to become ready", driverName, s.CloudspaceName)
 
-	cs, err := client.waitForCloudspace(ctx, s.CloudspaceName, "Running",
+	cs, err := client.waitForCloudspace(ctx, s.CloudspaceName, "Ready",
 		time.Duration(clusterReadyTimeout)*time.Minute)
 	if err != nil {
 		return clusterInfo, err
