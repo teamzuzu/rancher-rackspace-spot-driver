@@ -3,6 +3,7 @@ package driver
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/rancher/kontainer-engine/drivers/options"
 	"github.com/rancher/kontainer-engine/types"
@@ -132,12 +133,29 @@ func stateFromOptions(opts *types.DriverOptions) (*clusterState, error) {
 	return s, nil
 }
 
+// k8sVersionMap normalises short-form versions (e.g. "1.33") to the full
+// semver the API requires.
+var k8sVersionMap = map[string]string{
+	"1.29": "1.29.6",
+	"1.30": "1.30.10",
+	"1.31": "1.31.1",
+	"1.32": "1.32.9",
+	"1.33": "1.33.0",
+	"1.28": "1.32.9", // old default → current stable
+}
+
 func applyDefaults(s *clusterState) {
 	if s.Region == "" {
 		s.Region = defaultRegion
 	}
 	if s.KubernetesVersion == "" {
 		s.KubernetesVersion = defaultK8sVersion
+	}
+	// Normalise "1.X" → "1.X.Y" if the API requires full semver.
+	if !strings.Contains(s.KubernetesVersion, ".") || len(strings.Split(s.KubernetesVersion, ".")) == 2 {
+		if full, ok := k8sVersionMap[s.KubernetesVersion]; ok {
+			s.KubernetesVersion = full
+		}
 	}
 	if s.CNI == "" {
 		s.CNI = defaultCNI
