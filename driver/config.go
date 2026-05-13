@@ -159,7 +159,7 @@ func applyDefaults(s *clusterState) {
 	if s.CNI == "" {
 		s.CNI = defaultCNI
 	}
-	if s.SpotPoolName == "" {
+	if s.SpotPoolName == "" || uuid.Validate(s.SpotPoolName) != nil {
 		s.SpotPoolName = uuid.New().String()
 	}
 	if s.SpotServerClass == "" {
@@ -171,7 +171,7 @@ func applyDefaults(s *clusterState) {
 	if s.SpotBidPrice == "" {
 		s.SpotBidPrice = defaultSpotBid
 	}
-	if s.OnDemandEnabled && s.OnDemandPoolName == "" {
+	if s.OnDemandEnabled && (s.OnDemandPoolName == "" || uuid.Validate(s.OnDemandPoolName) != nil) {
 		s.OnDemandPoolName = uuid.New().String()
 	}
 }

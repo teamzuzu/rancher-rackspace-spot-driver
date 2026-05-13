@@ -236,7 +236,6 @@ const DEFAULTS = {
   kubernetesVersion:       '1.33.0',
   cni:                     'calico',
   gpuEnabled:              false,
-  spotNodePoolName:        'spot-pool',
   spotServerClass:         'ch.vs1.medium-iad',
   spotNodeCount:           1,
   spotBidPrice:            '0.50',
@@ -244,7 +243,6 @@ const DEFAULTS = {
   spotAutoscalingMinNodes: 1,
   spotAutoscalingMaxNodes: 10,
   onDemandEnabled:         false,
-  onDemandNodePoolName:    'on-demand-pool',
   onDemandNodeCount:       1,
 };
 
