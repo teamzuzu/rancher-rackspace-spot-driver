@@ -327,7 +327,7 @@ func (d *Driver) Remove(ctx context.Context, clusterInfo *types.ClusterInfo) err
 	logrus.Infof("[%s] deleting cloudspace %s", driverName, s.CloudspaceName)
 
 	if err := client.api.DeleteCloudspace(ctx, s.Organization, s.CloudspaceName); err != nil {
-		if spotv1.IsNotFound(err) {
+		if isNotFound(err) {
 			logrus.Infof("[%s] cloudspace %s already gone", driverName, s.CloudspaceName)
 			return nil
 		}

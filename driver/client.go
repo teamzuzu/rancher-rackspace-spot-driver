@@ -3,11 +3,18 @@ package driver
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	spotv1 "github.com/rackspace-spot/spot-go-sdk/api/v1"
 	"github.com/sirupsen/logrus"
 )
+
+// isNotFound works around a SDK inconsistency: the HTTP 404 path returns a plain
+// fmt.Errorf (not *HTTPStatusError), so spotv1.IsNotFound always returns false for it.
+func isNotFound(err error) bool {
+	return isNotFound(err) || (err != nil && strings.Contains(err.Error(), "not found"))
+}
 
 type spotClient struct {
 	api *spotv1.RackspaceSpotClient
@@ -32,7 +39,7 @@ func newSpotClient(ctx context.Context, refreshToken, org string) (*spotClient, 
 // ensureCloudspace creates a CloudSpace or returns the existing one if already created.
 func (c *spotClient) ensureCloudspace(ctx context.Context, s *clusterState) (*spotv1.CloudSpace, error) {
 	existing, err := c.api.GetCloudspace(ctx, c.org, s.CloudspaceName)
-	if err != nil && !spotv1.IsNotFound(err) {
+	if err != nil && !isNotFound(err) {
 		return nil, fmt.Errorf("failed to check existing cloudspace: %w", err)
 	}
 	if existing != nil {
@@ -61,7 +68,7 @@ func (c *spotClient) ensureCloudspace(ctx context.Context, s *clusterState) (*sp
 // ensureSpotNodePool creates or updates the spot node pool.
 func (c *spotClient) ensureSpotNodePool(ctx context.Context, s *clusterState) error {
 	existing, err := c.api.GetSpotNodePool(ctx, c.org, s.SpotPoolName)
-	if err != nil && !spotv1.IsNotFound(err) {
+	if err != nil && !isNotFound(err) {
 		return fmt.Errorf("failed to check existing spot pool: %w", err)
 	}
 
@@ -99,7 +106,7 @@ func (c *spotClient) ensureOnDemandNodePool(ctx context.Context, s *clusterState
 	}
 
 	existing, err := c.api.GetOnDemandNodePool(ctx, c.org, s.OnDemandPoolName)
-	if err != nil && !spotv1.IsNotFound(err) {
+	if err != nil && !isNotFound(err) {
 		return fmt.Errorf("failed to check existing on-demand pool: %w", err)
 	}
 
@@ -130,22 +137,22 @@ func (c *spotClient) ensureOnDemandNodePool(ctx context.Context, s *clusterState
 // deleteNodePools removes all node pools for a cloudspace before deletion.
 func (c *spotClient) deleteNodePools(ctx context.Context, s *clusterState) error {
 	spotPools, err := c.api.ListSpotNodePools(ctx, c.org, s.CloudspaceName)
-	if err != nil && !spotv1.IsNotFound(err) {
+	if err != nil && !isNotFound(err) {
 		return fmt.Errorf("failed to list spot node pools: %w", err)
 	}
 	for _, p := range spotPools {
-		if err := c.api.DeleteSpotNodePool(ctx, c.org, p.Name); err != nil && !spotv1.IsNotFound(err) {
+		if err := c.api.DeleteSpotNodePool(ctx, c.org, p.Name); err != nil && !isNotFound(err) {
 			return fmt.Errorf("failed to delete spot node pool %s: %w", p.Name, err)
 		}
 		logrus.Infof("deleted spot node pool %s", p.Name)
 	}
 
 	odmPools, err := c.api.ListOnDemandNodePools(ctx, c.org, s.CloudspaceName)
-	if err != nil && !spotv1.IsNotFound(err) {
+	if err != nil && !isNotFound(err) {
 		return fmt.Errorf("failed to list on-demand node pools: %w", err)
 	}
 	for _, p := range odmPools {
-		if err := c.api.DeleteOnDemandNodePool(ctx, c.org, p.Name); err != nil && !spotv1.IsNotFound(err) {
+		if err := c.api.DeleteOnDemandNodePool(ctx, c.org, p.Name); err != nil && !isNotFound(err) {
 			return fmt.Errorf("failed to delete on-demand node pool %s: %w", p.Name, err)
 		}
 		logrus.Infof("deleted on-demand node pool %s", p.Name)

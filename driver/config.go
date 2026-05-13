@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rancher/kontainer-engine/drivers/options"
 	"github.com/rancher/kontainer-engine/types"
 )
 
@@ -83,31 +84,42 @@ type clusterState struct {
 }
 
 func stateFromOptions(opts *types.DriverOptions) (*clusterState, error) {
-	s := &clusterState{
-		RefreshToken:      opts.StringOptions[flagRefreshToken],
-		Organization:      opts.StringOptions[flagOrganization],
-		Region:            opts.StringOptions[flagRegion],
-		KubernetesVersion: opts.StringOptions[flagK8sVersion],
-		CNI:               opts.StringOptions[flagCNI],
-		GPUEnabled:        opts.BoolOptions[flagGPUEnabled],
-		PreemptionWebhook: opts.StringOptions[flagPreemptionWebhook],
-		DeploymentType:    opts.StringOptions[flagDeploymentType],
-		SpotPoolName:      opts.StringOptions[flagSpotPoolName],
-		SpotServerClass:   opts.StringOptions[flagSpotServerClass],
-		SpotBidPrice:      opts.StringOptions[flagSpotBidPrice],
-		SpotAutoscaling:   opts.BoolOptions[flagSpotAutoscaling],
-		SpotMinNodes:      opts.IntOptions[flagSpotMinNodes],
-		SpotMaxNodes:      opts.IntOptions[flagSpotMaxNodes],
-		OnDemandEnabled:   opts.BoolOptions[flagOnDemandEnabled],
-		OnDemandPoolName:  opts.StringOptions[flagOnDemandPoolName],
-		OnDemandClass:     opts.StringOptions[flagOnDemandClass],
-		OnDemandPrice:     opts.StringOptions[flagOnDemandPrice],
+	// Rancher stores genericEngineConfig keys in camelCase; we accept both forms.
+	str := func(kebab, camel string) string {
+		return options.GetValueFromDriverOptions(opts, types.StringType, kebab, camel).(string)
+	}
+	bl := func(kebab, camel string) bool {
+		return options.GetValueFromDriverOptions(opts, types.BoolType, kebab, camel).(bool)
+	}
+	num := func(kebab, camel string) int64 {
+		return options.GetValueFromDriverOptions(opts, types.IntType, kebab, camel).(int64)
 	}
 
-	if n := opts.IntOptions[flagSpotNodeCount]; n > 0 {
+	s := &clusterState{
+		RefreshToken:      str(flagRefreshToken, "rackspaceSpotRefreshToken"),
+		Organization:      str(flagOrganization, "rackspaceSpotOrganization"),
+		Region:            str(flagRegion, "rackspaceSpotRegion"),
+		KubernetesVersion: str(flagK8sVersion, "kubernetesVersion"),
+		CNI:               str(flagCNI, "cni"),
+		GPUEnabled:        bl(flagGPUEnabled, "gpuEnabled"),
+		PreemptionWebhook: str(flagPreemptionWebhook, "preemptionWebhookUrl"),
+		DeploymentType:    str(flagDeploymentType, "deploymentType"),
+		SpotPoolName:      str(flagSpotPoolName, "spotNodePoolName"),
+		SpotServerClass:   str(flagSpotServerClass, "spotServerClass"),
+		SpotBidPrice:      str(flagSpotBidPrice, "spotBidPrice"),
+		SpotAutoscaling:   bl(flagSpotAutoscaling, "spotAutoscalingEnabled"),
+		SpotMinNodes:      num(flagSpotMinNodes, "spotAutoscalingMinNodes"),
+		SpotMaxNodes:      num(flagSpotMaxNodes, "spotAutoscalingMaxNodes"),
+		OnDemandEnabled:   bl(flagOnDemandEnabled, "onDemandEnabled"),
+		OnDemandPoolName:  str(flagOnDemandPoolName, "onDemandNodePoolName"),
+		OnDemandClass:     str(flagOnDemandClass, "onDemandServerClass"),
+		OnDemandPrice:     str(flagOnDemandPrice, "onDemandPricePerHour"),
+	}
+
+	if n := num(flagSpotNodeCount, "spotNodeCount"); n > 0 {
 		s.SpotNodeCount = int(n)
 	}
-	if n := opts.IntOptions[flagOnDemandCount]; n > 0 {
+	if n := num(flagOnDemandCount, "onDemandNodeCount"); n > 0 {
 		s.OnDemandCount = int(n)
 	}
 
@@ -183,28 +195,38 @@ func (s *clusterState) save(info *types.ClusterInfo) error {
 // mergeState overwrites the mutable fields from opts into an existing state,
 // preserving identity fields (CloudspaceName, Organization) that cannot change.
 func mergeState(existing *clusterState, opts *types.DriverOptions) {
-	if v := opts.StringOptions[flagK8sVersion]; v != "" {
+	str := func(kebab, camel string) string {
+		return options.GetValueFromDriverOptions(opts, types.StringType, kebab, camel).(string)
+	}
+	bl := func(kebab, camel string) bool {
+		return options.GetValueFromDriverOptions(opts, types.BoolType, kebab, camel).(bool)
+	}
+	num := func(kebab, camel string) int64 {
+		return options.GetValueFromDriverOptions(opts, types.IntType, kebab, camel).(int64)
+	}
+
+	if v := str(flagK8sVersion, "kubernetesVersion"); v != "" {
 		existing.KubernetesVersion = v
 	}
-	if v := opts.StringOptions[flagSpotBidPrice]; v != "" {
+	if v := str(flagSpotBidPrice, "spotBidPrice"); v != "" {
 		existing.SpotBidPrice = v
 	}
-	if n := opts.IntOptions[flagSpotNodeCount]; n > 0 {
+	if n := num(flagSpotNodeCount, "spotNodeCount"); n > 0 {
 		existing.SpotNodeCount = int(n)
 	}
-	if v := opts.BoolOptions[flagSpotAutoscaling]; v {
+	if v := bl(flagSpotAutoscaling, "spotAutoscalingEnabled"); v {
 		existing.SpotAutoscaling = v
 	}
-	if n := opts.IntOptions[flagSpotMinNodes]; n > 0 {
+	if n := num(flagSpotMinNodes, "spotAutoscalingMinNodes"); n > 0 {
 		existing.SpotMinNodes = n
 	}
-	if n := opts.IntOptions[flagSpotMaxNodes]; n > 0 {
+	if n := num(flagSpotMaxNodes, "spotAutoscalingMaxNodes"); n > 0 {
 		existing.SpotMaxNodes = n
 	}
-	if v := opts.BoolOptions[flagOnDemandEnabled]; v {
+	if v := bl(flagOnDemandEnabled, "onDemandEnabled"); v {
 		existing.OnDemandEnabled = v
 	}
-	if n := opts.IntOptions[flagOnDemandCount]; n > 0 {
+	if n := num(flagOnDemandCount, "onDemandNodeCount"); n > 0 {
 		existing.OnDemandCount = int(n)
 	}
 }
