@@ -74,9 +74,8 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 				Usage: "Deployment type (e.g. spot, on-demand)",
 			},
 			flagSpotPoolName: {
-				Type:    types.StringType,
-				Usage:   "Name for the spot node pool",
-				Default: &types.Default{DefaultString: defaultSpotPool},
+				Type:  types.StringType,
+				Usage: "Name for the spot node pool (leave blank to auto-generate a UUID)",
 			},
 			flagSpotServerClass: {
 				Type:    types.StringType,
@@ -114,9 +113,8 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 				Default: &types.Default{DefaultBool: false},
 			},
 			flagOnDemandPoolName: {
-				Type:    types.StringType,
-				Usage:   "Name for the on-demand node pool",
-				Default: &types.Default{DefaultString: defaultOnDemandPool},
+				Type:  types.StringType,
+				Usage: "Name for the on-demand node pool (leave blank to auto-generate a UUID)",
 			},
 			flagOnDemandClass: {
 				Type:  types.StringType,
@@ -178,18 +176,30 @@ func (d *Driver) GetDriverUpdateOptions(ctx context.Context) (*types.DriverFlags
 }
 
 // Create provisions a new CloudSpace and its node pools.
-func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterInfo *types.ClusterInfo) (*types.ClusterInfo, error) {
+func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterInfo *types.ClusterInfo) (retInfo *types.ClusterInfo, retErr error) {
+	defer func() {
+		if r := recover(); r != nil {
+			retErr = fmt.Errorf("[%s] Create() panic: %v", driverName, r)
+			logrus.Errorf(retErr.Error())
+		}
+	}()
+
+	logrus.Infof("[%s] Create() started", driverName)
+
 	s, err := stateFromOptions(opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Derive a valid CloudSpace name from the cluster name supplied by Rancher.
-	cloudspaceName, err := sanitizeResourceName(opts.StringOptions["name"])
+	rawName := opts.StringOptions["name"]
+	logrus.Infof("[%s] raw cluster name from opts: %q", driverName, rawName)
+	cloudspaceName, err := sanitizeResourceName(rawName)
 	if err != nil {
 		return nil, fmt.Errorf("invalid cluster name: %w", err)
 	}
 	s.CloudspaceName = cloudspaceName
+	logrus.Infof("[%s] sanitized cloudspace name: %q", driverName, cloudspaceName)
 
 	info := clusterInfo
 	if info == nil {
@@ -200,30 +210,39 @@ func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterI
 		return info, err
 	}
 
+	logrus.Infof("[%s] authenticating with Rackspace Spot API (org: %s)", driverName, s.Organization)
 	client, err := newSpotClient(ctx, s.RefreshToken, s.Organization)
 	if err != nil {
 		return info, err
 	}
+	logrus.Infof("[%s] authenticated OK", driverName)
 
 	logrus.Infof("[%s] creating cloudspace %s in org %s (region: %s, k8s: %s)",
 		driverName, s.CloudspaceName, s.Organization, s.Region, s.KubernetesVersion)
 
 	if _, err := client.ensureCloudspace(ctx, s); err != nil {
+		logrus.Errorf("[%s] ensureCloudspace failed: %v", driverName, err)
 		return info, err
 	}
+	logrus.Infof("[%s] ensureCloudspace OK", driverName)
 
 	if err := client.ensureSpotNodePool(ctx, s); err != nil {
+		logrus.Errorf("[%s] ensureSpotNodePool failed: %v", driverName, err)
 		return info, err
 	}
+	logrus.Infof("[%s] ensureSpotNodePool OK", driverName)
 
 	if err := client.ensureOnDemandNodePool(ctx, s); err != nil {
+		logrus.Errorf("[%s] ensureOnDemandNodePool failed: %v", driverName, err)
 		return info, err
 	}
+	logrus.Infof("[%s] ensureOnDemandNodePool OK", driverName)
 
 	if err := s.save(info); err != nil {
 		return info, err
 	}
 
+	logrus.Infof("[%s] Create() completed successfully", driverName)
 	return info, nil
 }
 

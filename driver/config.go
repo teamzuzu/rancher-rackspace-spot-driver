@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/rancher/kontainer-engine/drivers/options"
 	"github.com/rancher/kontainer-engine/types"
 )
@@ -37,11 +38,9 @@ const (
 	defaultRegion      = "colo-lax-1"
 	defaultK8sVersion  = "1.32.9"
 	defaultCNI         = "calico"
-	defaultSpotPool    = "spot-pool"
-	defaultSpotClass   = "rxtx.4xlarge-mi300x"
-	defaultSpotCount   = int64(3)
-	defaultSpotBid     = "0.50"
-	defaultOnDemandPool = "on-demand-pool"
+	defaultSpotClass = "rxtx.4xlarge-mi300x"
+	defaultSpotCount = int64(3)
+	defaultSpotBid   = "0.50"
 
 	metaStateKey = "state"
 
@@ -161,7 +160,7 @@ func applyDefaults(s *clusterState) {
 		s.CNI = defaultCNI
 	}
 	if s.SpotPoolName == "" {
-		s.SpotPoolName = defaultSpotPool
+		s.SpotPoolName = uuid.New().String()
 	}
 	if s.SpotServerClass == "" {
 		s.SpotServerClass = defaultSpotClass
@@ -173,7 +172,7 @@ func applyDefaults(s *clusterState) {
 		s.SpotBidPrice = defaultSpotBid
 	}
 	if s.OnDemandEnabled && s.OnDemandPoolName == "" {
-		s.OnDemandPoolName = defaultOnDemandPool
+		s.OnDemandPoolName = uuid.New().String()
 	}
 }
 
