@@ -124,8 +124,8 @@ All options are set in the Rancher cluster creation form.
 
 | Option | Required | Default | Description |
 |---|---|---|---|
-| `rackspace-spot-region` | | `colo-lax-1` | Rackspace Spot region |
-| `kubernetes-version` | | `1.32.9` | Kubernetes version for the CloudSpace |
+| `rackspace-spot-region` | ✅ | — | Rackspace Spot region (e.g. `us-east-1`) |
+| `kubernetes-version` | | `1.33.0` | Kubernetes version for the CloudSpace |
 | `cni` | | `calico` | CNI plugin (`calico`, `cilium`, or `byocni`) |
 | `gpu-enabled` | | `false` | Enable GPU support on the CloudSpace |
 | `preemption-webhook-url` | | — | Webhook called before spot nodes are preempted |
@@ -140,7 +140,7 @@ A spot pool is always created. Spot nodes are preemptible and billed at your bid
 | `spot-node-pool-name` | | *(auto-generated UUID)* | Name for the spot node pool |
 | `spot-server-class` | | `rxtx.4xlarge-mi300x` | Hardware class for spot nodes |
 | `spot-node-count` | | `3` | Desired number of spot nodes |
-| `spot-bid-price` | | `0.50` | Maximum price per node-hour (USD) |
+| `spot-bid-price` | | `0.01` | Maximum price per node-hour (USD) |
 | `spot-autoscaling-enabled` | | `false` | Enable autoscaling for the spot pool |
 | `spot-autoscaling-min-nodes` | | `1` | Autoscaling lower bound |
 | `spot-autoscaling-max-nodes` | | `10` | Autoscaling upper bound |

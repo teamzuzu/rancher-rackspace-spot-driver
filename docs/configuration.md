@@ -17,8 +17,8 @@ All options are available in the Rancher UI when creating or editing a cluster. 
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `region` | string | `colo-lax-1` | Rackspace Spot region where the CloudSpace is created. |
-| `k8sVersion` | string | `1.32.9` | Kubernetes version for the control plane. Must be a version supported by Rackspace Spot. |
+| `region` | string | **required** | Rackspace Spot region where the CloudSpace is created (e.g. `us-east-1`). |
+| `k8sVersion` | string | `1.33.0` | Kubernetes version for the control plane. Must be a version supported by Rackspace Spot. |
 | `cni` | string | `calico` | CNI plugin. Accepted values: `calico`, `cilium`, `byocni`. |
 | `gpuEnabled` | bool | `false` | Attach GPU resources to the CloudSpace. Requires a region that supports GPUs. |
 | `preemptionWebhook` | string | — | HTTPS URL called by Rackspace Spot before preempting a spot node. Useful for draining workloads gracefully. |
@@ -35,7 +35,7 @@ The spot node pool is always created. It is the primary source of compute for th
 | `spotPoolName` | string | *(auto-generated UUID)* | Name for the spot node pool. Must be unique within the CloudSpace. Auto-generated if not provided. |
 | `spotServerClass` | string | `rxtx.4xlarge-mi300x` | [Server class](https://spot.rackspace.com) for spot nodes (CPU/RAM/GPU tier). |
 | `spotNodeCount` | int | `3` | Desired number of spot nodes. Ignored when autoscaling is enabled. |
-| `spotBidPrice` | string | `0.50` | Maximum price per node-hour in USD. Nodes are only provisioned when the market price is at or below this value. |
+| `spotBidPrice` | string | `0.01` | Maximum price per node-hour in USD. Nodes are only provisioned when the market price is at or below this value. |
 | `spotAutoscaling` | bool | `false` | Enable autoscaling for the spot pool. When enabled, `spotNodeCount` is overridden by the autoscaler. |
 | `spotMinNodes` | int | `1` | Minimum node count when autoscaling is enabled. |
 | `spotMaxNodes` | int | `10` | Maximum node count when autoscaling is enabled. |
@@ -73,7 +73,7 @@ You can define additional spot node pools beyond the primary one by providing a 
     "name":        "",
     "serverClass": "rxtx.4xlarge-mi300x",
     "nodeCount":   2,
-    "bidPrice":    "0.50",
+    "bidPrice":    "0.01",
     "autoscaling": false,
     "minNodes":    1,
     "maxNodes":    10
@@ -125,12 +125,12 @@ For example, `My Cluster (prod)` becomes `my-cluster--prod-`.
 ```
 refreshToken:        <your token>
 organization:        acme-corp
-region:              colo-lax-1
-k8sVersion:          1.32.9
+region:              <your-region>
+k8sVersion:          1.33.0
 cni:                 calico
 
 spotServerClass:     rxtx.4xlarge-mi300x
-spotBidPrice:        0.50
+spotBidPrice:        0.01
 spotAutoscaling:     true
 spotMinNodes:        2
 spotMaxNodes:        20
@@ -142,6 +142,6 @@ onDemandCount:       2
 
 This configuration creates a cluster with:
 
-- A spot pool that autoscales between 2 and 20 `rxtx.4xlarge-mi300x` nodes, capped at $0.50/hr per node
+- A spot pool that autoscales between 2 and 20 `rxtx.4xlarge-mi300x` nodes, capped at $0.01/hr per node
 - A fixed on-demand pool of 2 `rxtx.2xlarge` nodes for guaranteed capacity
 - Pool names are auto-generated UUIDs

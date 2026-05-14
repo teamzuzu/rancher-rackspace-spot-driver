@@ -348,13 +348,13 @@ const CLIENT_ID = 'mwG3lUMV8KyeMqHe4fJ5Bb3nM1vBvRNa';
 
 const DEFAULTS = {
   driverName:              DRIVER,
-  rackspaceSpotRegion:     'colo-lax-1',
-  kubernetesVersion:       '1.32.9',
+  rackspaceSpotRegion:     '',
+  kubernetesVersion:       '1.33.0',
   cni:                     'calico',
   gpuEnabled:              false,
   spotServerClass:         'rxtx.4xlarge-mi300x',
   spotNodeCount:           3,
-  spotBidPrice:            '0.50',
+  spotBidPrice:            '0.01',
   spotAutoscalingEnabled:  false,
   spotAutoscalingMinNodes: 1,
   spotAutoscalingMaxNodes: 10,

@@ -46,9 +46,8 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 				Usage: "Rackspace Spot organization name",
 			},
 			flagRegion: {
-				Type:    types.StringType,
-				Usage:   "Rackspace Spot region",
-				Default: &types.Default{DefaultString: defaultRegion},
+				Type:  types.StringType,
+				Usage: "Rackspace Spot region",
 			},
 			flagK8sVersion: {
 				Type:    types.StringType,

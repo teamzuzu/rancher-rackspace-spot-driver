@@ -88,7 +88,7 @@ See the full [Configuration reference](configuration.md) for all available optio
 4. Click **Create** and wait for the cluster to reach the **Active** state
 
 !!! info "Provisioning time"
-    A new CloudSpace typically takes 5–10 minutes to reach the `Active` state. Rancher polls automatically and updates the cluster status.
+    A new CloudSpace typically takes 5–25 minutes to reach the `Active` state ⏳ — grab a coffee while Rancher polls and updates the cluster status automatically.
 
 ---
 
