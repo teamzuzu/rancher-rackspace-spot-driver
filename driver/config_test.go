@@ -156,6 +156,21 @@ func TestMergeStatePreservesTokenWhenAbsentFromOpts(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsMultipleAutoscalingPools(t *testing.T) {
+	state := &clusterState{
+		RefreshToken:    "token",
+		Organization:   "org",
+		Region:          "us-east-1",
+		SpotAutoscaling: true,
+		AdditionalSpotPools: []SpotPoolConfig{
+			{Autoscaling: true},
+		},
+	}
+	if err := validate(state); err == nil {
+		t.Fatal("validate() should return error when multiple pools have autoscaling enabled")
+	}
+}
+
 func TestStateFromOptionsAppliesDefaults(t *testing.T) {
 	opts := &types.DriverOptions{
 		StringOptions: map[string]string{

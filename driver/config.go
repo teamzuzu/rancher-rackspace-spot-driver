@@ -205,6 +205,18 @@ func validate(s *clusterState) error {
 	if s.Region == "" {
 		return fmt.Errorf("%s is required", flagRegion)
 	}
+	autoscalingCount := 0
+	if s.SpotAutoscaling {
+		autoscalingCount++
+	}
+	for _, p := range s.AdditionalSpotPools {
+		if p.Autoscaling {
+			autoscalingCount++
+		}
+	}
+	if autoscalingCount > 1 {
+		return fmt.Errorf("only one spot node pool may have autoscaling enabled per cloudspace (API limit)")
+	}
 	return nil
 }
 
