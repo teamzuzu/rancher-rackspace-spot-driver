@@ -48,6 +48,16 @@
         />
       </div>
     </div>
+    <div class="row mt-10">
+      <div class="col span-8">
+        <LabeledInput
+          v-model:value="proxyUrl"
+          label="API Proxy URL (optional — required if Rancher cannot reach spot.rackspace.com directly)"
+          placeholder="https://rackspace-spot-proxy.<you>.workers.dev"
+          :mode="mode"
+        />
+      </div>
+    </div>
 
     <!-- ── Cluster ─────────────────────────────────────────── -->
     <h3 class="mt-20">Cluster</h3>
@@ -453,6 +463,7 @@ export default defineComponent({
         || '',
       config:               { ...DEFAULTS, ...raw },
       additionalSpotPools,
+      proxyUrl:             '',
       errors:               [],
       availableRegions:     [],
       serverClasses:        [],
@@ -523,11 +534,14 @@ export default defineComponent({
       if (!this.config.rackspaceSpotRefreshToken) return;
       this.priceLoading = true;
       this.priceError   = null;
+      const proxy = (this.proxyUrl || '').replace(/\/$/, '');
+      const authBase = proxy || AUTH_URL;
+      const apiBase  = proxy || API_URL;
       try {
         // Step 1: exchange refresh token for id_token
         let token;
         try {
-          const authResp = await fetch(`${AUTH_URL}/oauth/token`, {
+          const authResp = await fetch(`${authBase}/oauth/token`, {
             method:  'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body:    new URLSearchParams({
@@ -545,7 +559,10 @@ export default defineComponent({
           if (!token) throw new Error('No id_token in authentication response — check your refresh token');
         } catch (e) {
           if (e.message === 'Failed to fetch' || e.message?.includes('NetworkError')) {
-            throw new Error(`Authentication request blocked — ${AUTH_URL} does not allow browser requests from this origin (CORS). This needs a server-side proxy.`);
+            const suggestion = proxy
+            ? `Check that ${proxy} is reachable and has CORS headers set.`
+            : `${AUTH_URL} does not allow browser requests from this origin (CORS). Deploy the proxy in the proxy/ directory and enter its URL in the "API Proxy URL" field above.`;
+          throw new Error(`Authentication request blocked — ${suggestion}`);
           }
           throw e;
         }
@@ -554,8 +571,8 @@ export default defineComponent({
 
         // Step 2: fetch regions and server classes in parallel
         const [regionsResp, scResp] = await Promise.all([
-          fetch(`${API_URL}/apis/ngpc.rxt.io/v1/regions`, { headers }),
-          fetch(`${API_URL}/apis/ngpc.rxt.io/v1/serverclasses`, { headers }),
+          fetch(`${apiBase}/apis/ngpc.rxt.io/v1/regions`, { headers }),
+          fetch(`${apiBase}/apis/ngpc.rxt.io/v1/serverclasses`, { headers }),
         ]);
 
         if (regionsResp.ok) {
