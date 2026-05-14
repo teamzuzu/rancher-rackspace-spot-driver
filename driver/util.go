@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	rancherServiceAccount   = "rancher"
-	rancherNamespace        = "kube-system"
+	rancherServiceAccount     = "rancher"
+	rancherNamespace          = "kube-system"
 	rancherClusterRoleBinding = "rancher"
-	tokenSecretName         = "rancher-token"
-	tokenWaitTimeout        = 30 * time.Second
+	tokenSecretName           = "rancher-token"
+	tokenWaitTimeout          = 30 * time.Second
 )
 
 // populateClusterInfoFromKubeconfig extracts the endpoint and CA certificate
