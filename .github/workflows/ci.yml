@@ -3,6 +3,11 @@ name: CI
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '.github/workflows/**'
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '*.md'
 
 permissions:
   contents: read
