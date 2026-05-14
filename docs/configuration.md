@@ -17,9 +17,9 @@ All options are available in the Rancher UI when creating or editing a cluster. 
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `region` | string | `US-TX-3` | Rackspace Spot region where the CloudSpace is created. |
-| `k8sVersion` | string | `1.29` | Kubernetes version for the control plane. Must be a version supported by Rackspace Spot. |
-| `cni` | string | `calico` | CNI plugin. Accepted values: `calico`, `flannel`. |
+| `region` | string | **required** | Rackspace Spot region where the CloudSpace is created (e.g. `us-east-1`). |
+| `k8sVersion` | string | `1.33.0` | Kubernetes version for the control plane. Must be a version supported by Rackspace Spot. |
+| `cni` | string | `calico` | CNI plugin. Accepted values: `calico`, `cilium`, `byocni`. |
 | `gpuEnabled` | bool | `false` | Attach GPU resources to the CloudSpace. Requires a region that supports GPUs. |
 | `preemptionWebhook` | string | — | HTTPS URL called by Rackspace Spot before preempting a spot node. Useful for draining workloads gracefully. |
 | `deploymentType` | string | — | Override the CloudSpace deployment type (e.g. `spot`, `on-demand`). Leave blank to use the region default. |
@@ -32,10 +32,10 @@ The spot node pool is always created. It is the primary source of compute for th
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `spotPoolName` | string | `spot` | Name for the spot node pool. Must be unique within the CloudSpace. |
-| `spotServerClass` | string | `gp.small` | [Server class](https://docs.rackspacespot.com/server-classes) for spot nodes (CPU/RAM/GPU tier). |
+| `spotPoolName` | string | *(auto-generated UUID)* | Name for the spot node pool. Must be unique within the CloudSpace. Auto-generated if not provided. |
+| `spotServerClass` | string | `rxtx.4xlarge-mi300x` | [Server class](https://spot.rackspace.com) for spot nodes (CPU/RAM/GPU tier). |
 | `spotNodeCount` | int | `3` | Desired number of spot nodes. Ignored when autoscaling is enabled. |
-| `spotBidPrice` | string | `0.10` | Maximum price per node-hour in USD. Nodes are only provisioned when the market price is at or below this value. |
+| `spotBidPrice` | string | `0.01` | Maximum price per node-hour in USD. Nodes are only provisioned when the market price is at or below this value. |
 | `spotAutoscaling` | bool | `false` | Enable autoscaling for the spot pool. When enabled, `spotNodeCount` is overridden by the autoscaler. |
 | `spotMinNodes` | int | `1` | Minimum node count when autoscaling is enabled. |
 | `spotMaxNodes` | int | `10` | Maximum node count when autoscaling is enabled. |
@@ -55,11 +55,33 @@ An optional second pool that uses reserved capacity. Use it for workloads that c
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `onDemandEnabled` | bool | `false` | When `true`, the on-demand pool is created (or updated). When `false`, the pool is skipped — existing pools are not deleted. |
-| `onDemandPoolName` | string | `on-demand` | Name for the on-demand node pool. |
+| `onDemandEnabled` | bool | `false` | When `true`, the on-demand pool is created (or updated). When `false`, any existing on-demand pools are deleted. |
+| `onDemandPoolName` | string | *(auto-generated UUID)* | Name for the on-demand node pool. Auto-generated if not provided. |
 | `onDemandClass` | string | — | Server class for on-demand nodes. Required when `onDemandEnabled` is `true`. |
 | `onDemandCount` | int | `1` | Desired number of on-demand nodes. |
 | `onDemandPrice` | string | — | Maximum price per node-hour in USD. Optional — leave blank to use the region list price. |
+
+---
+
+## Additional spot pools
+
+You can define additional spot node pools beyond the primary one by providing a JSON array in `additionalSpotPools`. Each entry supports the same fields as the primary spot pool:
+
+```json
+[
+  {
+    "name":        "",
+    "serverClass": "rxtx.4xlarge-mi300x",
+    "nodeCount":   2,
+    "bidPrice":    "0.01",
+    "autoscaling": false,
+    "minNodes":    1,
+    "maxNodes":    10
+  }
+]
+```
+
+If `name` is blank or not a valid UUID it is auto-generated. Pools that are present in the running cluster but absent from the desired list are deleted on the next update.
 
 ---
 
@@ -69,14 +91,16 @@ When editing an existing cluster, only the following fields are reconciled. All 
 
 | Option | Updateable |
 |---|---|
-| `k8sVersion` | Yes (version stored; applied on next reconciliation) |
+| `refreshToken` | Yes (use to rotate credentials without recreating the cluster) |
+| `k8sVersion` | Yes (stored; applied on next reconciliation) |
 | `spotNodeCount` | Yes |
 | `spotBidPrice` | Yes |
 | `spotAutoscaling` | Yes |
 | `spotMinNodes` | Yes |
 | `spotMaxNodes` | Yes |
-| `onDemandEnabled` | Yes (enables pool creation if previously disabled) |
+| `onDemandEnabled` | Yes (enables or disables the on-demand pool; disabling deletes existing pools) |
 | `onDemandCount` | Yes |
+| `additionalSpotPools` | Yes (adds, updates, or removes additional spot pools) |
 
 ---
 
@@ -101,24 +125,23 @@ For example, `My Cluster (prod)` becomes `my-cluster--prod-`.
 ```
 refreshToken:        <your token>
 organization:        acme-corp
-region:              US-TX-3
-k8sVersion:          1.29
+region:              <your-region>
+k8sVersion:          1.33.0
 cni:                 calico
 
-spotPoolName:        spot
-spotServerClass:     gp.medium
-spotBidPrice:        0.20
+spotServerClass:     rxtx.4xlarge-mi300x
+spotBidPrice:        0.01
 spotAutoscaling:     true
 spotMinNodes:        2
 spotMaxNodes:        20
 
 onDemandEnabled:     true
-onDemandPoolName:    on-demand
-onDemandClass:       gp.small
+onDemandClass:       rxtx.2xlarge
 onDemandCount:       2
 ```
 
 This configuration creates a cluster with:
 
-- A spot pool that autoscales between 2 and 20 `gp.medium` nodes, capped at $0.20/hr per node
-- A fixed on-demand pool of 2 `gp.small` nodes for guaranteed capacity
+- A spot pool that autoscales between 2 and 20 `rxtx.4xlarge-mi300x` nodes, capped at $0.01/hr per node
+- A fixed on-demand pool of 2 `rxtx.2xlarge` nodes for guaranteed capacity
+- Pool names are auto-generated UUIDs

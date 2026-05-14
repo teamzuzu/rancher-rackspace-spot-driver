@@ -12,7 +12,7 @@ func TestSaveRedactsRefreshTokenFromMetadata(t *testing.T) {
 		RefreshToken:      "refresh-token",
 		Organization:      "org",
 		CloudspaceName:    "cluster",
-		Region:            defaultRegion,
+		Region:            "test-region",
 		KubernetesVersion: defaultK8sVersion,
 		CNI:               defaultCNI,
 		SpotPoolName:      "pool",
@@ -161,6 +161,7 @@ func TestStateFromOptionsAppliesDefaults(t *testing.T) {
 		StringOptions: map[string]string{
 			"rackspaceSpotRefreshToken": "token",
 			"rackspaceSpotOrganization": "org",
+			"rackspaceSpotRegion":       "us-east-1",
 		},
 		BoolOptions: map[string]bool{},
 		IntOptions:  map[string]int64{},
@@ -171,8 +172,8 @@ func TestStateFromOptionsAppliesDefaults(t *testing.T) {
 		t.Fatalf("stateFromOptions() error = %v", err)
 	}
 
-	if state.Region != defaultRegion {
-		t.Fatalf("Region = %q, want %q", state.Region, defaultRegion)
+	if state.Region != "us-east-1" {
+		t.Fatalf("Region = %q, want us-east-1", state.Region)
 	}
 	if state.KubernetesVersion != defaultK8sVersion {
 		t.Fatalf("KubernetesVersion = %q, want %q", state.KubernetesVersion, defaultK8sVersion)

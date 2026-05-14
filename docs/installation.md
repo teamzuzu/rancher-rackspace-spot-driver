@@ -1,15 +1,15 @@
 # Installation
 
-This guide walks through registering the Rackspace Spot driver in Rancher and creating your first cluster.
+This guide walks through installing the Rackspace Spot driver in Rancher and creating your first cluster.
 
 ---
 
 ## Prerequisites
 
-- A running **Rancher** instance (v2.6 or later)
+- A running **Rancher** instance (v2.10 or later — UI extension requires Dashboard v2.10+)
 - A **Rackspace Spot** account with an organization already created
 - A Rackspace Spot **refresh token** (see [Obtaining credentials](#obtaining-credentials) below)
-- Outbound HTTPS access from your Rancher server to `api.rackspacespot.com`
+- Outbound HTTPS access from your Rancher server to `api.rackspace.com`
 
 ---
 
@@ -17,57 +17,67 @@ This guide walks through registering the Rackspace Spot driver in Rancher and cr
 
 The driver authenticates with Rackspace Spot using a long-lived **refresh token**.
 
-1. Log in to the [Rackspace Spot console](https://console.rackspacespot.com)
-2. Navigate to **Account → API tokens**
-3. Click **Generate token** and copy the value — you will not see it again
+1. Log in to the [Rackspace Spot console](https://spot.rackspace.com)
+2. Navigate to **Account → API Access**
+3. Click **Get new token**, give it a name, and copy the value — you will not see it again
 
 !!! warning "Keep your token secret"
     Store the token in Rancher as a secret (the UI marks the field as a password). Do not commit it to source control.
 
 ---
 
-## Registering the driver in Rancher
+## Installing the driver
 
-### 1. Add the cluster driver
+The driver and its UI extension are distributed as a Helm chart via the GitHub Pages Helm repository.
 
-1. In Rancher, open the **☰** menu and go to **Cluster Management**
-2. Click **Drivers** in the left sidebar, then select the **Cluster Drivers** tab
-3. Click **Add Cluster Driver** (top right)
+### Step 1 — Add the extension repository
 
-Fill in the form:
+1. Open the Rancher UI and navigate to **☰ → Extensions**
+2. Click **⋮ → Manage Extension Repositories**
+3. Click **Create** and fill in:
 
-| Field | Value |
-|---|---|
-| **Download URL** | `https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/latest/download/rancher-rackspace-spot-driver_linux_amd64.tar.gz` |
-| **Custom UI URL** | `https://teamzuzu.github.io/rancher-rackspace-spot-driver/ui/component.js` |
-| **Checksum** | *(optional — copy from the release checksums file)* |
-| **Whitelist Domains** | `rackspacespot.com` |
+   | Field | Value |
+   |---|---|
+   | **Name** | `rackspace-spot` |
+   | **URL** | `https://teamzuzu.github.io/rancher-rackspace-spot-driver` |
 
-!!! info "Custom UI (Rancher 2.11+)"
-    The Custom UI URL loads a Vue-based UI Extension that renders the cluster configuration form in Rancher 2.11+. It replaces the deprecated Ember-based Custom UI Plugins. The legacy Cluster Manager UI continues to work without a Custom UI URL, but the modern Dashboard UI requires it.
+4. Click **Create**
 
-Click **Create**.
+Alternatively, install via Helm directly:
 
-### 2. Wait for activation
+```bash
+helm repo add rackspace-spot https://teamzuzu.github.io/rancher-rackspace-spot-driver
+helm repo update
+helm install rackspacespot rackspace-spot/rackspacespot \
+  --namespace cattle-ui-plugin-system \
+  --create-namespace
+```
 
-Rancher downloads and verifies the driver binary. The status column shows **Active** once registration is complete (usually under 30 seconds).
+### Step 2 — Install the extension
 
-!!! note "arm64 nodes"
-    If your Rancher server runs on arm64, change `amd64` to `arm64` in the download URL.
+1. Navigate to **☰ → Extensions → Available**
+2. Find **Rackspace Spot** and click **Install**
+
+Rancher installs the Helm chart, which registers:
+
+- A `KontainerDriver` — tells Rancher where to download the binary
+- A `UIPlugin` — tells Rancher's Dashboard where to load the cluster configuration form from
+
+The cluster driver status changes to **Active** within ~30 seconds.
 
 ---
 
 ## Creating a cluster
 
-1. Go to **Cluster Management → Create**
+1. Go to **☰ → Cluster Management → Clusters → Create**
 2. Select **Rackspace Spot** from the provider list
-3. Fill in the cluster details:
+3. Fill in the cluster configuration (see [Configuration reference](configuration.md)):
 
 ### Required fields
 
 | Field | Description |
 |---|---|
-| **Cluster Name** | A display name for the cluster in Rancher (converted to a valid CloudSpace name automatically) |
+| **Cluster Name** | A display name for the cluster in Rancher (automatically converted to a valid CloudSpace name) |
 | **Refresh Token** | Your Rackspace Spot API refresh token |
 | **Organization** | Your Rackspace Spot organization name |
 
@@ -78,22 +88,30 @@ See the full [Configuration reference](configuration.md) for all available optio
 4. Click **Create** and wait for the cluster to reach the **Active** state
 
 !!! info "Provisioning time"
-    A new CloudSpace typically takes 5–10 minutes to reach the `Running` state. Rancher polls every 30 seconds and updates the cluster status automatically.
+    A new CloudSpace typically takes 5–25 minutes to reach the `Active` state ⏳ — grab a coffee while Rancher polls and updates the cluster status automatically.
 
 ---
 
 ## Upgrading the driver
 
-To use a newer driver version, update the **Download URL** on the cluster driver's edit page to point to the new release asset, then click **Save**. Rancher will re-download and reload the binary.
+To upgrade, update the repository and upgrade the Helm chart:
 
-Existing clusters are not affected by the driver upgrade until their next reconciliation.
+```bash
+helm repo update rackspace-spot
+helm upgrade rackspacespot rackspace-spot/rackspacespot \
+  --namespace cattle-ui-plugin-system
+```
+
+Or via **☰ → Extensions → Installed → Rackspace Spot → ⋮ → Upgrade**.
+
+Existing clusters are not affected until their next reconciliation.
 
 ---
 
 ## Removing the driver
 
-1. Go to **Cluster Management → Drivers → Cluster Drivers**
-2. Find the Rackspace Spot driver, click **⋮ → Delete**
+1. Navigate to **☰ → Extensions → Installed**
+2. Find **Rackspace Spot** and click **⋮ → Uninstall**
 
 !!! warning
     Delete all Rackspace Spot clusters **before** removing the driver. If you remove the driver first, Rancher loses the ability to call the cloud API to clean up the underlying resources.
@@ -102,14 +120,14 @@ Existing clusters are not affected by the driver upgrade until their next reconc
 
 ## Installing via container (advanced)
 
-If you manage Rancher with Helm, you can inject the driver binary as an init container and mount it into the Rancher pod. This is useful in air-gapped environments where Rancher cannot reach GitHub.
+If you manage Rancher with Helm in an air-gapped environment where Rancher cannot reach GitHub, you can inject the driver binary as an init container:
 
 ```yaml
 # values.yaml excerpt
 extraInitContainers:
   - name: spot-driver
     image: ghcr.io/teamzuzu/rancher-rackspace-spot-driver:latest
-    command: ["/bin/sh", "-c", "cp /rancher-rackspace-spot-driver /drivers/"]
+    command: ["/bin/sh", "-c", "cp /kontainer-engine-driver-rackspacespot /drivers/"]
     volumeMounts:
       - name: drivers
         mountPath: /drivers
@@ -119,4 +137,5 @@ extraVolumeMounts:
     mountPath: /var/lib/rancher/kontainer-engine/drivers
 ```
 
-Set the driver's **Download URL** to `file:///var/lib/rancher/kontainer-engine/drivers/rancher-rackspace-spot-driver` in Rancher after mounting.
+!!! note "arm64 nodes"
+    If your Rancher server runs on arm64, use the `kontainer-engine-driver-rackspacespot-arm64` binary instead.

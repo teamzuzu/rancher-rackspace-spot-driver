@@ -36,12 +36,11 @@ const (
 	flagOnDemandPrice       = "on-demand-price-per-hour"
 	flagAdditionalSpotPools = "additional-spot-pools"
 
-	defaultRegion     = "colo-lax-1"
-	defaultK8sVersion = "1.32.9"
+	defaultK8sVersion = "1.33.0"
 	defaultCNI        = "calico"
 	defaultSpotClass  = "rxtx.4xlarge-mi300x"
 	defaultSpotCount  = int64(3)
-	defaultSpotBid    = "0.50"
+	defaultSpotBid    = "0.01"
 
 	metaStateKey = "state"
 
@@ -154,9 +153,6 @@ var k8sVersionMap = map[string]string{
 }
 
 func applyDefaults(s *clusterState) {
-	if s.Region == "" {
-		s.Region = defaultRegion
-	}
 	if s.KubernetesVersion == "" {
 		s.KubernetesVersion = defaultK8sVersion
 	}
@@ -205,6 +201,9 @@ func validate(s *clusterState) error {
 	}
 	if s.Organization == "" {
 		return fmt.Errorf("%s is required", flagOrganization)
+	}
+	if s.Region == "" {
+		return fmt.Errorf("%s is required", flagRegion)
 	}
 	return nil
 }
