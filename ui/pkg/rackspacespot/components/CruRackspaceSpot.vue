@@ -180,7 +180,8 @@
         <div class="col span-4">
           <Checkbox
             v-model:value="config.spotAutoscalingEnabled"
-            label="Enable Autoscaling"
+            :label="primaryAutoscalingDisabled ? 'Enable Autoscaling (another pool has autoscaling)' : 'Enable Autoscaling'"
+            :disabled="primaryAutoscalingDisabled"
             :mode="mode"
           />
         </div>
@@ -254,7 +255,8 @@
         <div class="col span-4">
           <Checkbox
             v-model:value="pool.autoscaling"
-            label="Enable Autoscaling"
+            :label="autoscalingPoolCount >= 1 && !pool.autoscaling ? 'Enable Autoscaling (another pool has autoscaling)' : 'Enable Autoscaling'"
+            :disabled="autoscalingPoolCount >= 1 && !pool.autoscaling"
             :mode="mode"
           />
         </div>
@@ -440,6 +442,13 @@ export default defineComponent({
     validationPassed() {
       return !!(this.clusterName && this.config.rackspaceSpotRefreshToken && this.config.rackspaceSpotOrganization);
     },
+    autoscalingPoolCount() {
+      return (this.config.spotAutoscalingEnabled ? 1 : 0)
+        + this.additionalSpotPools.filter(p => p.autoscaling).length;
+    },
+    primaryAutoscalingDisabled() {
+      return this.autoscalingPoolCount >= 1 && !this.config.spotAutoscalingEnabled;
+    },
     filteredServerClasses() {
       const region = this.config.rackspaceSpotRegion;
       if (!region) return this.serverClasses;
@@ -533,6 +542,11 @@ export default defineComponent({
       }
       if (!this.config.rackspaceSpotOrganization) {
         this.errors = ['Organization is required'];
+        if (btnCb) btnCb(false);
+        return;
+      }
+      if (this.autoscalingPoolCount > 1) {
+        this.errors = ['Only one spot node pool may have autoscaling enabled per cloudspace (API limit).'];
         if (btnCb) btnCb(false);
         return;
       }

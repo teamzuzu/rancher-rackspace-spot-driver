@@ -100,6 +100,17 @@ func (c *spotClient) reconcileSpotNodePools(ctx context.Context, s *clusterState
 		}
 	}
 
+	// API limit: only one pool per cloudspace may have autoscaling enabled.
+	autoscalingCount := 0
+	for _, d := range desired {
+		if d.autoscaling {
+			autoscalingCount++
+		}
+	}
+	if autoscalingCount > 1 {
+		return fmt.Errorf("only one spot node pool may have autoscaling enabled per cloudspace (API limit)")
+	}
+
 	existing, err := c.api.ListSpotNodePools(ctx, c.org, s.CloudspaceName)
 	if err != nil && !isNotFound(err) {
 		return fmt.Errorf("failed to list spot node pools: %w", err)
