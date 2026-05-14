@@ -377,10 +377,9 @@ import LabeledInput      from '@components/Form/LabeledInput/LabeledInput';
 import LabeledSelect     from '@shell/components/form/LabeledSelect';
 import Checkbox          from '@components/Form/Checkbox/Checkbox';
 
-const DRIVER   = 'rackspacespot';
-const AUTH_URL = 'https://login.spot.rackspace.com';
-const API_URL  = 'https://spot.rackspace.com';
-const CLIENT_ID = 'mwG3lUMV8KyeMqHe4fJ5Bb3nM1vBvRNa';
+const DRIVER     = 'rackspacespot';
+// Reached via Rancher's built-in K8s proxy — same origin from the browser, no CORS.
+const API_SERVER = '/k8s/clusters/local/api/v1/namespaces/cattle-system/services/http:rackspacespot-api:8080/proxy';
 
 const DEFAULTS = {
   driverName:              DRIVER,
@@ -524,72 +523,31 @@ export default defineComponent({
       this.priceLoading = true;
       this.priceError   = null;
       try {
-        // Step 1: exchange refresh token for id_token
-        let token;
-        try {
-          const authResp = await fetch(`${AUTH_URL}/oauth/token`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body:    new URLSearchParams({
-              grant_type:    'refresh_token',
-              client_id:     CLIENT_ID,
-              refresh_token: this.config.rackspaceSpotRefreshToken,
-            }),
-          });
-          if (!authResp.ok) {
-            const body = await authResp.text().catch(() => '');
-            throw new Error(`Authentication failed (HTTP ${authResp.status})${body ? ': ' + body : ''}`);
-          }
-          const authData = await authResp.json();
-          token = authData.id_token;
-          if (!token) throw new Error('No id_token in authentication response — check your refresh token');
-        } catch (e) {
-          if (e.message === 'Failed to fetch' || e.message?.includes('NetworkError')) {
-            throw new Error(`Authentication request blocked — ${AUTH_URL} does not allow browser requests from this origin (CORS). This needs a server-side proxy.`);
-          }
-          throw e;
+        const resp = await fetch(`${API_SERVER}/api/lookup`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ refreshToken: this.config.rackspaceSpotRefreshToken }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          throw new Error(data.error || `API server returned HTTP ${resp.status}`);
         }
 
-        const headers = { Authorization: `Bearer ${token}` };
-
-        // Step 2: fetch regions and server classes in parallel
-        const [regionsResp, scResp] = await Promise.all([
-          fetch(`${API_URL}/apis/ngpc.rxt.io/v1/regions`, { headers }),
-          fetch(`${API_URL}/apis/ngpc.rxt.io/v1/serverclasses`, { headers }),
-        ]);
-
-        if (regionsResp.ok) {
-          const regData = await regionsResp.json();
-          this.availableRegions = (regData.items || []).map(i => ({
-            name:        i.metadata?.name || '',
-            description: i.spec?.description || '',
-          })).sort((a, b) => a.name.localeCompare(b.name));
-          // auto-select region if only one available and none set
-          if (this.availableRegions.length === 1 && !this.config.rackspaceSpotRegion) {
-            this.config.rackspaceSpotRegion = this.availableRegions[0].name;
-          }
+        this.availableRegions = (data.regions || [])
+          .sort((a, b) => a.name.localeCompare(b.name));
+        if (this.availableRegions.length === 1 && !this.config.rackspaceSpotRegion) {
+          this.config.rackspaceSpotRegion = this.availableRegions[0].name;
         }
 
-        if (!scResp.ok) {
-          throw new Error(`Server class fetch failed (HTTP ${scResp.status})`);
-        }
-        const scData = await scResp.json();
-        this.serverClasses = (scData.items || [])
-          .filter(i => i.spec?.availability === 'available')
-          .map(i => ({
-            name:          i.metadata?.name || '',
-            region:        i.spec?.region || '',
-            cpu:           i.spec?.resources?.cpu || '',
-            memory:        i.spec?.resources?.memory || '',
-            marketPrice:   i.status?.spotPricing?.marketPricePerHour
-              ? `$${i.status.spotPricing.marketPricePerHour}`
-              : 'N/A',
-            minBidPrice:   i.spec?.minBidPricePerHour
-              ? `$${i.spec.minBidPricePerHour}`
-              : 'N/A',
-            onDemandPrice: i.spec?.onDemandPricing?.cost
-              ? `$${i.spec.onDemandPricing.cost}`
-              : 'N/A',
+        this.serverClasses = (data.serverClasses || [])
+          .map(sc => ({
+            name:          sc.name,
+            region:        sc.region,
+            cpu:           sc.cpu,
+            memory:        sc.memory,
+            marketPrice:   sc.marketPrice   ? `$${sc.marketPrice}`   : 'N/A',
+            minBidPrice:   sc.minBidPrice   ? `$${sc.minBidPrice}`   : 'N/A',
+            onDemandPrice: sc.onDemandPrice ? `$${sc.onDemandPrice}` : 'N/A',
           }))
           .sort((a, b) => a.name.localeCompare(b.name));
       } catch (e) {

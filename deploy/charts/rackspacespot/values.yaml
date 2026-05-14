@@ -1,5 +1,8 @@
 kontainerDriver:
-  url: "https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/download/v0.0.7/rancher-rackspace-spot-driver_linux_amd64.tar.gz"
-  checksum: "13a0f18ae177f09c46d51a15870ddd3f68819b3b123a2ff469e9e9784f66d01a"
+  url: ""
+  checksum: ""
 uiPlugin:
   endpoint: ""
+apiServer:
+  image: "ghcr.io/teamzuzu/rancher-rackspace-spot-driver:latest"
+  port: 8080
