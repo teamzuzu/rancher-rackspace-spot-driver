@@ -53,9 +53,20 @@
     <h3 class="mt-20">Cluster</h3>
     <div class="row">
       <div class="col span-4">
-        <LabeledInput
+        <LabeledSelect
+          v-if="regionOptions.length"
           v-model:value="config.rackspaceSpotRegion"
           label="Region"
+          :options="regionOptions"
+          :required="true"
+          :mode="mode"
+        />
+        <LabeledInput
+          v-else
+          v-model:value="config.rackspaceSpotRegion"
+          label="Region"
+          placeholder="e.g. colo-lax-1"
+          :required="true"
           :mode="mode"
         />
       </div>
@@ -109,15 +120,16 @@
         class="btn btn-sm btn-default"
         type="button"
         :disabled="!config.rackspaceSpotRefreshToken || priceLoading"
-        @click="loadServerClasses"
+        @click="loadFromApi"
       >
-        {{ priceLoading ? 'Loading…' : (serverClasses.length ? 'Refresh Prices' : 'Load Server Classes & Prices') }}
+        {{ priceLoading ? 'Loading…' : (serverClasses.length ? 'Refresh from API' : 'Load Regions & Server Classes') }}
       </button>
     </div>
     <div v-if="priceError" class="price-error mt-5">
       {{ priceError }}
     </div>
     <div v-if="serverClasses.length" class="price-table-wrap mt-10">
+      <p class="price-hint">Click a row to use that server class in the pool below.</p>
       <table class="price-table">
         <thead>
           <tr>
@@ -131,7 +143,13 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="sc in filteredServerClasses" :key="sc.name">
+          <tr
+            v-for="sc in filteredServerClasses"
+            :key="sc.name"
+            class="sc-row"
+            :class="{ 'sc-row--selected': config.spotServerClass === sc.name }"
+            @click="config.spotServerClass = sc.name"
+          >
             <td><code>{{ sc.name }}</code></td>
             <td>{{ sc.region }}</td>
             <td>{{ sc.cpu }}</td>
@@ -151,7 +169,15 @@
       </div>
       <div class="row mt-10">
         <div class="col span-4">
+          <LabeledSelect
+            v-if="serverClassOptions.length"
+            v-model:value="config.spotServerClass"
+            label="Server Class"
+            :options="serverClassOptions"
+            :mode="mode"
+          />
           <LabeledInput
+            v-else
             v-model:value="config.spotServerClass"
             label="Server Class"
             :placeholder="serverClassPlaceholder"
@@ -226,7 +252,15 @@
       </div>
       <div class="row mt-10">
         <div class="col span-4">
+          <LabeledSelect
+            v-if="serverClassOptions.length"
+            v-model:value="pool.serverClass"
+            label="Server Class"
+            :options="serverClassOptions"
+            :mode="mode"
+          />
           <LabeledInput
+            v-else
             v-model:value="pool.serverClass"
             label="Server Class"
             :placeholder="serverClassPlaceholder"
@@ -420,6 +454,7 @@ export default defineComponent({
       config:               { ...DEFAULTS, ...raw },
       additionalSpotPools,
       errors:               [],
+      availableRegions:     [],
       serverClasses:        [],
       priceLoading:         false,
       priceError:           null,
@@ -454,6 +489,18 @@ export default defineComponent({
       if (!region) return this.serverClasses;
       return this.serverClasses.filter(sc => sc.region === region);
     },
+    regionOptions() {
+      return this.availableRegions.map(r => ({
+        label: r.description ? `${r.name} — ${r.description}` : r.name,
+        value: r.name,
+      }));
+    },
+    serverClassOptions() {
+      return this.filteredServerClasses.map(sc => ({
+        label: `${sc.name}  (min bid ${sc.minBidPrice} · market ${sc.marketPrice})`,
+        value: sc.name,
+      }));
+    },
     serverClassPlaceholder() {
       if (this.serverClasses.length) {
         const first = this.filteredServerClasses[0];
@@ -472,31 +519,61 @@ export default defineComponent({
       this.additionalSpotPools.splice(idx, 1);
     },
 
-    async loadServerClasses() {
+    async loadFromApi() {
       if (!this.config.rackspaceSpotRefreshToken) return;
       this.priceLoading = true;
       this.priceError   = null;
       try {
-        const authResp = await fetch(`${AUTH_URL}/oauth/token`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body:    new URLSearchParams({
-            grant_type:    'refresh_token',
-            client_id:     CLIENT_ID,
-            refresh_token: this.config.rackspaceSpotRefreshToken,
-          }),
-        });
-        if (!authResp.ok) throw new Error(`Auth failed: ${authResp.status}`);
-        const authData = await authResp.json();
-        const token = authData.id_token;
-        if (!token) throw new Error('No id_token in auth response');
+        // Step 1: exchange refresh token for id_token
+        let token;
+        try {
+          const authResp = await fetch(`${AUTH_URL}/oauth/token`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body:    new URLSearchParams({
+              grant_type:    'refresh_token',
+              client_id:     CLIENT_ID,
+              refresh_token: this.config.rackspaceSpotRefreshToken,
+            }),
+          });
+          if (!authResp.ok) {
+            const body = await authResp.text().catch(() => '');
+            throw new Error(`Authentication failed (HTTP ${authResp.status})${body ? ': ' + body : ''}`);
+          }
+          const authData = await authResp.json();
+          token = authData.id_token;
+          if (!token) throw new Error('No id_token in authentication response — check your refresh token');
+        } catch (e) {
+          if (e.message === 'Failed to fetch' || e.message?.includes('NetworkError')) {
+            throw new Error(`Authentication request blocked — ${AUTH_URL} does not allow browser requests from this origin (CORS). This needs a server-side proxy.`);
+          }
+          throw e;
+        }
 
-        const scResp = await fetch(`${API_URL}/apis/ngpc.rxt.io/v1/serverclasses`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!scResp.ok) throw new Error(`Server class fetch failed: ${scResp.status}`);
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // Step 2: fetch regions and server classes in parallel
+        const [regionsResp, scResp] = await Promise.all([
+          fetch(`${API_URL}/apis/ngpc.rxt.io/v1/regions`, { headers }),
+          fetch(`${API_URL}/apis/ngpc.rxt.io/v1/serverclasses`, { headers }),
+        ]);
+
+        if (regionsResp.ok) {
+          const regData = await regionsResp.json();
+          this.availableRegions = (regData.items || []).map(i => ({
+            name:        i.metadata?.name || '',
+            description: i.spec?.description || '',
+          })).sort((a, b) => a.name.localeCompare(b.name));
+          // auto-select region if only one available and none set
+          if (this.availableRegions.length === 1 && !this.config.rackspaceSpotRegion) {
+            this.config.rackspaceSpotRegion = this.availableRegions[0].name;
+          }
+        }
+
+        if (!scResp.ok) {
+          throw new Error(`Server class fetch failed (HTTP ${scResp.status})`);
+        }
         const scData = await scResp.json();
-
         this.serverClasses = (scData.items || [])
           .filter(i => i.spec?.availability === 'available')
           .map(i => ({
@@ -516,12 +593,7 @@ export default defineComponent({
           }))
           .sort((a, b) => a.name.localeCompare(b.name));
       } catch (e) {
-        const isCors = e.message === 'Failed to fetch' || e.message?.includes('NetworkError');
-        if (isCors) {
-          this.priceError = `Could not load server classes: the Rackspace Spot API does not allow direct browser requests from this Rancher instance (CORS restriction). View available server classes at spot.rackspace.com.`;
-        } else {
-          this.priceError = `Could not load server classes: ${e.message}`;
-        }
+        this.priceError = e.message;
       } finally {
         this.priceLoading = false;
       }
@@ -641,6 +713,24 @@ export default defineComponent({
 }
 .price-table .price {
   font-family: monospace;
+}
+.price-hint {
+  font-size: 0.8em;
+  color: var(--muted);
+  margin: 0 0 4px;
+}
+.sc-row {
+  cursor: pointer;
+}
+.sc-row:hover {
+  background: var(--accent-btn);
+}
+.sc-row--selected {
+  background: var(--primary) !important;
+  color: var(--primary-text);
+}
+.sc-row--selected code {
+  color: var(--primary-text);
 }
 .price-error {
   color: var(--error);
