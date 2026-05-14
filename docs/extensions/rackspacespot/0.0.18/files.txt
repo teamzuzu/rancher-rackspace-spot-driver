@@ -1,0 +1,8 @@
+files.txt
+plugin/img/generic-catalog.1842a50e.svg
+plugin/package.json
+plugin/rackspacespot-0.0.18.umd.min.60.js
+plugin/rackspacespot-0.0.18.umd.min.60.js.map
+plugin/rackspacespot-0.0.18.umd.min.js
+plugin/rackspacespot-0.0.18.umd.min.js.map
+plugin/report.html
