@@ -398,7 +398,11 @@ export default defineComponent({
   emits: ['update:value'],
 
   data() {
-    const raw = this.value?.rackspacespotEngineConfig || {};
+    // In edit mode value is a Steve provisioning.cattle.io.cluster; config lives on mgmt.
+    // In create mode it may be a plain object or newly constructed Steve resource.
+    const raw = this.value?.rackspacespotEngineConfig
+      || this.value?.mgmt?.spec?.genericEngineConfig
+      || {};
     let additionalSpotPools = [];
     if (raw.additionalSpotPools) {
       try {
@@ -406,7 +410,11 @@ export default defineComponent({
       } catch (e) {}
     }
     return {
-      clusterName:          this.value?.displayName || this.value?.name || '',
+      clusterName: this.value?.displayName
+        || this.value?.spec?.displayName
+        || this.value?.name
+        || this.value?.metadata?.name
+        || '',
       config:               { ...DEFAULTS, ...raw },
       additionalSpotPools,
       errors:               [],
@@ -531,9 +539,14 @@ export default defineComponent({
         };
 
         if (this.value?.id) {
+          // mgmtClusterId is the Norman v3 cluster ID (e.g. c-w467n).
+          // this.value.id is the Steve provisioning cluster name which is NOT a valid Norman ID.
+          const mgmtId = this.value?.mgmtClusterId
+            || this.value?.mgmt?.id
+            || this.value?.id;
           const existing = await this.$store.dispatch('rancher/find', {
             type: 'cluster',
-            id:   this.value.id,
+            id:   mgmtId,
             opt:  { force: true },
           });
           existing.rackspacespotEngineConfig = cfg;
