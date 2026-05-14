@@ -12,6 +12,9 @@ on:
         required: false
         default: false
         type: boolean
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 permissions:
   contents: write       # create GitHub releases, upload assets, push tags, commit docs
@@ -29,7 +32,11 @@ jobs:
       - name: Check version format
         id: check
         run: |
-          VERSION="${{ inputs.version }}"
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="${{ inputs.version }}"
+          fi
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Version must match vMAJOR.MINOR.PATCH (e.g. v1.2.3), got: $VERSION"
             exit 1
@@ -54,11 +61,11 @@ jobs:
         run: |
           VERSION="${{ needs.validate.outputs.version }}"
           if git rev-parse "$VERSION" >/dev/null 2>&1; then
-            echo "::error::Tag $VERSION already exists"
-            exit 1
+            echo "Tag $VERSION already exists — skipping (tag-push trigger)"
+          else
+            git tag -a "$VERSION" -m "Release $VERSION"
+            git push origin "$VERSION"
           fi
-          git tag -a "$VERSION" -m "Release $VERSION"
-          git push origin "$VERSION"
 
   goreleaser:
     name: Build & publish binaries
@@ -163,7 +170,7 @@ jobs:
           VER="${VERSION#v}"
           PLUGIN_DIR="docs/extensions/rackspacespot/${VER}/plugin"
           mkdir -p "${PLUGIN_DIR}"
-          cp ui/dist-pkg/rackspacespot-${VER}/* "${PLUGIN_DIR}/"
+          cp -r ui/dist-pkg/rackspacespot-${VER}/. "${PLUGIN_DIR}/"
           # Generate files.txt listing all files under the versioned dir
           (cd "docs/extensions/rackspacespot/${VER}" && find * -type f | sort) \
             > "docs/extensions/rackspacespot/${VER}/files.txt"
