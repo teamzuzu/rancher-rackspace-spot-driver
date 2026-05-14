@@ -415,7 +415,8 @@ export default defineComponent({
       priceError:           null,
       cniOptions:           [
         { label: 'calico', value: 'calico' },
-        { label: 'flannel', value: 'flannel' },
+        { label: 'cilium', value: 'cilium' },
+        { label: 'byocni', value: 'byocni' },
       ],
       k8sVersionOptions: [
         { label: '1.33.0', value: '1.33.0' },
