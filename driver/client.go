@@ -18,8 +18,27 @@ func isNotFound(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "not found")
 }
 
+// spotAPI is the subset of the Rackspace Spot SDK used by spotClient.
+// It is defined as an interface to allow substitution in tests.
+type spotAPI interface {
+	Authenticate(ctx context.Context) (string, error)
+	GetCloudspace(ctx context.Context, org, name string) (*spotv1.CloudSpace, error)
+	CreateCloudspace(ctx context.Context, cs spotv1.CloudSpace) error
+	DeleteCloudspace(ctx context.Context, org, name string) error
+	GetCloudspaceConfig(ctx context.Context, namespace, name string) (string, error)
+	ListSpotNodePools(ctx context.Context, org, cloudspaceName string) ([]*spotv1.SpotNodePool, error)
+	CreateSpotNodePool(ctx context.Context, org string, pool spotv1.SpotNodePool) error
+	UpdateSpotNodePool(ctx context.Context, org string, pool spotv1.SpotNodePool) error
+	DeleteSpotNodePool(ctx context.Context, org, name string) error
+	GetOnDemandNodePool(ctx context.Context, org, name string) (*spotv1.OnDemandNodePool, error)
+	CreateOnDemandNodePool(ctx context.Context, org string, pool spotv1.OnDemandNodePool) error
+	UpdateOnDemandNodePool(ctx context.Context, org string, pool spotv1.OnDemandNodePool) error
+	ListOnDemandNodePools(ctx context.Context, org, cloudspaceName string) ([]*spotv1.OnDemandNodePool, error)
+	DeleteOnDemandNodePool(ctx context.Context, org, name string) error
+}
+
 type spotClient struct {
-	api *spotv1.RackspaceSpotClient
+	api spotAPI
 	org string
 }
 
@@ -68,7 +87,15 @@ func (c *spotClient) ensureCloudspace(ctx context.Context, s *clusterState) (*sp
 }
 
 // reconcileSpotNodePools creates, updates, and removes spot node pools to match desired state.
-// It manages the primary pool plus any AdditionalSpotPools, deleting pools no longer desired.
+//
+// Operations are applied in three phases to satisfy the vspotnodepool webhook constraint
+// (at most one SpotNodePool with autoscaling enabled per cloudspace at any point in time):
+//
+//  1. Delete pools no longer in desired state — removes any existing autoscaling pool that is
+//     being dropped before a different pool tries to enable autoscaling.
+//  2. Disable autoscaling on pools that are losing it — ensures no two pools hold autoscaling
+//     simultaneously when one pool is switching off while another switches on.
+//  3. Create new pools and update remaining existing pools — safe to enable autoscaling now.
 func (c *spotClient) reconcileSpotNodePools(ctx context.Context, s *clusterState) error {
 	type poolSpec struct {
 		serverClass string
@@ -120,7 +147,7 @@ func (c *spotClient) reconcileSpotNodePools(ctx context.Context, s *clusterState
 		existingNames[p.Name] = true
 	}
 
-	for name, d := range desired {
+	buildPool := func(name string, d poolSpec) spotv1.SpotNodePool {
 		pool := spotv1.SpotNodePool{
 			Name:        name,
 			Org:         c.org,
@@ -132,7 +159,35 @@ func (c *spotClient) reconcileSpotNodePools(ctx context.Context, s *clusterState
 		pool.Autoscaling.Enabled = d.autoscaling
 		pool.Autoscaling.MinNodes = d.minNodes
 		pool.Autoscaling.MaxNodes = d.maxNodes
+		return pool
+	}
 
+	// Phase 1: delete pools no longer desired.
+	for _, p := range existing {
+		if _, wanted := desired[p.Name]; !wanted {
+			if err := c.api.DeleteSpotNodePool(ctx, c.org, p.Name); err != nil && !isNotFound(err) {
+				return fmt.Errorf("failed to delete spot node pool %s: %w", p.Name, err)
+			}
+			logrus.Infof("deleted spot node pool %s (removed from desired state)", p.Name)
+		}
+	}
+
+	// Phase 2: disable autoscaling on existing pools that are losing it.
+	for name, d := range desired {
+		if existingNames[name] && !d.autoscaling {
+			if err := c.api.UpdateSpotNodePool(ctx, c.org, buildPool(name, d)); err != nil {
+				return fmt.Errorf("failed to update spot node pool %s: %w", name, err)
+			}
+			logrus.Infof("updated spot node pool %s", name)
+		}
+	}
+
+	// Phase 3: create new pools and update pools keeping or gaining autoscaling.
+	for name, d := range desired {
+		if existingNames[name] && !d.autoscaling {
+			continue // already handled in phase 2
+		}
+		pool := buildPool(name, d)
 		if !existingNames[name] {
 			if err := c.api.CreateSpotNodePool(ctx, c.org, pool); err != nil {
 				return fmt.Errorf("failed to create spot node pool %s: %w", name, err)
@@ -143,15 +198,6 @@ func (c *spotClient) reconcileSpotNodePools(ctx context.Context, s *clusterState
 				return fmt.Errorf("failed to update spot node pool %s: %w", name, err)
 			}
 			logrus.Infof("updated spot node pool %s", name)
-		}
-	}
-
-	for _, p := range existing {
-		if _, wanted := desired[p.Name]; !wanted {
-			if err := c.api.DeleteSpotNodePool(ctx, c.org, p.Name); err != nil && !isNotFound(err) {
-				return fmt.Errorf("failed to delete spot node pool %s: %w", p.Name, err)
-			}
-			logrus.Infof("deleted spot node pool %s (removed from desired state)", p.Name)
 		}
 	}
 	return nil
