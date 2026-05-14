@@ -33,7 +33,8 @@ const (
 	flagOnDemandPoolName = "on-demand-node-pool-name"
 	flagOnDemandClass    = "on-demand-server-class"
 	flagOnDemandCount    = "on-demand-node-count"
-	flagOnDemandPrice    = "on-demand-price-per-hour"
+	flagOnDemandPrice        = "on-demand-price-per-hour"
+	flagAdditionalSpotPools  = "additional-spot-pools"
 
 	defaultRegion      = "colo-lax-1"
 	defaultK8sVersion  = "1.32.9"
@@ -47,6 +48,17 @@ const (
 	clusterReadyTimeout = 30 // minutes
 	pollInterval        = 15 // seconds
 )
+
+// SpotPoolConfig describes a single spot node pool.
+type SpotPoolConfig struct {
+	Name        string `json:"name"`
+	ServerClass string `json:"serverClass"`
+	NodeCount   int    `json:"nodeCount"`
+	BidPrice    string `json:"bidPrice"`
+	Autoscaling bool   `json:"autoscaling"`
+	MinNodes    int64  `json:"minNodes,omitempty"`
+	MaxNodes    int64  `json:"maxNodes,omitempty"`
+}
 
 type clusterState struct {
 	// Auth
@@ -74,6 +86,9 @@ type clusterState struct {
 	SpotAutoscaling bool  `json:"spotAutoscaling"`
 	SpotMinNodes    int64 `json:"spotMinNodes,omitempty"`
 	SpotMaxNodes    int64 `json:"spotMaxNodes,omitempty"`
+
+	// Additional spot node pools (beyond the primary)
+	AdditionalSpotPools []SpotPoolConfig `json:"additionalSpotPools,omitempty"`
 
 	// Optional on-demand node pool
 	OnDemandEnabled  bool   `json:"onDemandEnabled"`
@@ -121,6 +136,12 @@ func stateFromOptions(opts *types.DriverOptions) (*clusterState, error) {
 	}
 	if n := num(flagOnDemandCount, "onDemandNodeCount"); n > 0 {
 		s.OnDemandCount = int(n)
+	}
+
+	if raw := str(flagAdditionalSpotPools, "additionalSpotPools"); raw != "" {
+		if err := json.Unmarshal([]byte(raw), &s.AdditionalSpotPools); err != nil {
+			return nil, fmt.Errorf("failed to parse additional spot pools: %w", err)
+		}
 	}
 
 	applyDefaults(s)
@@ -173,6 +194,19 @@ func applyDefaults(s *clusterState) {
 	}
 	if s.OnDemandEnabled && (s.OnDemandPoolName == "" || uuid.Validate(s.OnDemandPoolName) != nil) {
 		s.OnDemandPoolName = uuid.New().String()
+	}
+
+	for i := range s.AdditionalSpotPools {
+		p := &s.AdditionalSpotPools[i]
+		if p.Name == "" || uuid.Validate(p.Name) != nil {
+			p.Name = uuid.New().String()
+		}
+		if p.BidPrice == "" {
+			p.BidPrice = defaultSpotBid
+		}
+		if p.NodeCount == 0 {
+			p.NodeCount = int(defaultSpotCount)
+		}
 	}
 }
 
@@ -245,5 +279,12 @@ func mergeState(existing *clusterState, opts *types.DriverOptions) {
 	}
 	if n := num(flagOnDemandCount, "onDemandNodeCount"); n > 0 {
 		existing.OnDemandCount = int(n)
+	}
+
+	if raw := str(flagAdditionalSpotPools, "additionalSpotPools"); raw != "" {
+		var pools []SpotPoolConfig
+		if err := json.Unmarshal([]byte(raw), &pools); err == nil {
+			existing.AdditionalSpotPools = pools
+		}
 	}
 }

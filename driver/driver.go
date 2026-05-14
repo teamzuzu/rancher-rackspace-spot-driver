@@ -129,6 +129,10 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 				Type:  types.StringType,
 				Usage: "Maximum price per node-hour for on-demand nodes",
 			},
+			flagAdditionalSpotPools: {
+				Type:  types.StringType,
+				Usage: "JSON array of additional spot node pool configurations",
+			},
 		},
 	}
 	return flags, nil
@@ -169,6 +173,10 @@ func (d *Driver) GetDriverUpdateOptions(ctx context.Context) (*types.DriverFlags
 			flagOnDemandCount: {
 				Type:  types.IntType,
 				Usage: "Desired number of on-demand nodes",
+			},
+			flagAdditionalSpotPools: {
+				Type:  types.StringType,
+				Usage: "JSON array of additional spot node pool configurations",
 			},
 		},
 	}
@@ -226,11 +234,11 @@ func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterI
 	}
 	logrus.Infof("[%s] ensureCloudspace OK", driverName)
 
-	if err := client.ensureSpotNodePool(ctx, s); err != nil {
-		logrus.Errorf("[%s] ensureSpotNodePool failed: %v", driverName, err)
+	if err := client.reconcileSpotNodePools(ctx, s); err != nil {
+		logrus.Errorf("[%s] reconcileSpotNodePools failed: %v", driverName, err)
 		return info, err
 	}
-	logrus.Infof("[%s] ensureSpotNodePool OK", driverName)
+	logrus.Infof("[%s] reconcileSpotNodePools OK", driverName)
 
 	if err := client.ensureOnDemandNodePool(ctx, s); err != nil {
 		logrus.Errorf("[%s] ensureOnDemandNodePool failed: %v", driverName, err)
@@ -262,7 +270,7 @@ func (d *Driver) Update(ctx context.Context, clusterInfo *types.ClusterInfo, opt
 
 	logrus.Infof("[%s] updating cloudspace %s", driverName, s.CloudspaceName)
 
-	if err := client.ensureSpotNodePool(ctx, s); err != nil {
+	if err := client.reconcileSpotNodePools(ctx, s); err != nil {
 		return clusterInfo, err
 	}
 	if err := client.ensureOnDemandNodePool(ctx, s); err != nil {

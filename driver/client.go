@@ -67,37 +67,82 @@ func (c *spotClient) ensureCloudspace(ctx context.Context, s *clusterState) (*sp
 	return c.api.GetCloudspace(ctx, c.org, s.CloudspaceName)
 }
 
-// ensureSpotNodePool creates or updates the spot node pool.
-func (c *spotClient) ensureSpotNodePool(ctx context.Context, s *clusterState) error {
-	existing, err := c.api.GetSpotNodePool(ctx, c.org, s.SpotPoolName)
+// reconcileSpotNodePools creates, updates, and removes spot node pools to match desired state.
+// It manages the primary pool plus any AdditionalSpotPools, deleting pools no longer desired.
+func (c *spotClient) reconcileSpotNodePools(ctx context.Context, s *clusterState) error {
+	type poolSpec struct {
+		serverClass string
+		nodeCount   int
+		bidPrice    string
+		autoscaling bool
+		minNodes    int64
+		maxNodes    int64
+	}
+
+	desired := map[string]poolSpec{
+		s.SpotPoolName: {
+			serverClass: s.SpotServerClass,
+			nodeCount:   s.SpotNodeCount,
+			bidPrice:    s.SpotBidPrice,
+			autoscaling: s.SpotAutoscaling,
+			minNodes:    s.SpotMinNodes,
+			maxNodes:    s.SpotMaxNodes,
+		},
+	}
+	for _, p := range s.AdditionalSpotPools {
+		desired[p.Name] = poolSpec{
+			serverClass: p.ServerClass,
+			nodeCount:   p.NodeCount,
+			bidPrice:    p.BidPrice,
+			autoscaling: p.Autoscaling,
+			minNodes:    p.MinNodes,
+			maxNodes:    p.MaxNodes,
+		}
+	}
+
+	existing, err := c.api.ListSpotNodePools(ctx, c.org, s.CloudspaceName)
 	if err != nil && !isNotFound(err) {
-		return fmt.Errorf("failed to check existing spot pool: %w", err)
+		return fmt.Errorf("failed to list spot node pools: %w", err)
+	}
+	existingNames := make(map[string]bool, len(existing))
+	for _, p := range existing {
+		existingNames[p.Name] = true
 	}
 
-	pool := spotv1.SpotNodePool{
-		Name:        s.SpotPoolName,
-		Org:         c.org,
-		Cloudspace:  s.CloudspaceName,
-		ServerClass: s.SpotServerClass,
-		Desired:     s.SpotNodeCount,
-		BidPrice:    s.SpotBidPrice,
-	}
-	pool.Autoscaling.Enabled = s.SpotAutoscaling
-	pool.Autoscaling.MinNodes = s.SpotMinNodes
-	pool.Autoscaling.MaxNodes = s.SpotMaxNodes
-
-	if existing == nil {
-		if err := c.api.CreateSpotNodePool(ctx, c.org, pool); err != nil {
-			return fmt.Errorf("failed to create spot node pool: %w", err)
+	for name, d := range desired {
+		pool := spotv1.SpotNodePool{
+			Name:        name,
+			Org:         c.org,
+			Cloudspace:  s.CloudspaceName,
+			ServerClass: d.serverClass,
+			Desired:     d.nodeCount,
+			BidPrice:    d.bidPrice,
 		}
-		logrus.Infof("created spot node pool %s", s.SpotPoolName)
-	} else {
-		if err := c.api.UpdateSpotNodePool(ctx, c.org, pool); err != nil {
-			return fmt.Errorf("failed to update spot node pool: %w", err)
+		pool.Autoscaling.Enabled = d.autoscaling
+		pool.Autoscaling.MinNodes = d.minNodes
+		pool.Autoscaling.MaxNodes = d.maxNodes
+
+		if !existingNames[name] {
+			if err := c.api.CreateSpotNodePool(ctx, c.org, pool); err != nil {
+				return fmt.Errorf("failed to create spot node pool %s: %w", name, err)
+			}
+			logrus.Infof("created spot node pool %s", name)
+		} else {
+			if err := c.api.UpdateSpotNodePool(ctx, c.org, pool); err != nil {
+				return fmt.Errorf("failed to update spot node pool %s: %w", name, err)
+			}
+			logrus.Infof("updated spot node pool %s", name)
 		}
-		logrus.Infof("updated spot node pool %s", s.SpotPoolName)
 	}
 
+	for _, p := range existing {
+		if _, wanted := desired[p.Name]; !wanted {
+			if err := c.api.DeleteSpotNodePool(ctx, c.org, p.Name); err != nil && !isNotFound(err) {
+				return fmt.Errorf("failed to delete spot node pool %s: %w", p.Name, err)
+			}
+			logrus.Infof("deleted spot node pool %s (removed from desired state)", p.Name)
+		}
+	}
 	return nil
 }
 
