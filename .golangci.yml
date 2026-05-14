@@ -1,9 +1,13 @@
 version: "2"
 linters:
   enable:
+    - errcheck
     - gocritic
+    - govet
+    - ineffassign
     - misspell
     - revive
+    - staticcheck
   settings:
     revive:
       rules:

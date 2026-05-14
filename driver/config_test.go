@@ -116,7 +116,47 @@ func TestMergeStateAppliesFalseAndZeroValues(t *testing.T) {
 	}
 }
 
-func TestStateFromOptionsDefaultsAndRedaction(t *testing.T) {
+// TestSaveDoesNotClearPasswordWhenTokenEmpty verifies that save() does not
+// overwrite info.Password with an empty string when RefreshToken is unset.
+// This prevents token loss in SetClusterSize/SetVersion when Rancher does not
+// round-trip ClusterInfo.Password back to the driver.
+func TestSaveDoesNotClearPasswordWhenTokenEmpty(t *testing.T) {
+	state := &clusterState{
+		RefreshToken: "", // token not loaded (e.g. empty state from SetClusterSize)
+		Organization: "org",
+	}
+	info := &types.ClusterInfo{
+		Password: "pre-existing-token",
+		Metadata: map[string]string{},
+	}
+
+	if err := state.save(info); err != nil {
+		t.Fatalf("save() error = %v", err)
+	}
+
+	if info.Password != "pre-existing-token" {
+		t.Fatalf("save() overwrote Password with empty token: got %q", info.Password)
+	}
+}
+
+// TestMergeStatePreservesTokenWhenAbsentFromOpts verifies that mergeState does
+// not clear an existing RefreshToken when the token key is absent from opts.
+func TestMergeStatePreservesTokenWhenAbsentFromOpts(t *testing.T) {
+	state := &clusterState{RefreshToken: "existing-token"}
+	opts := &types.DriverOptions{
+		StringOptions: map[string]string{}, // token not present
+		BoolOptions:   map[string]bool{},
+		IntOptions:    map[string]int64{},
+	}
+
+	mergeState(state, opts)
+
+	if state.RefreshToken != "existing-token" {
+		t.Fatalf("mergeState clobbered RefreshToken: got %q", state.RefreshToken)
+	}
+}
+
+func TestStateFromOptionsAppliesDefaults(t *testing.T) {
 	opts := &types.DriverOptions{
 		StringOptions: map[string]string{
 			"rackspaceSpotRefreshToken": "token",
@@ -131,7 +171,16 @@ func TestStateFromOptionsDefaultsAndRedaction(t *testing.T) {
 		t.Fatalf("stateFromOptions() error = %v", err)
 	}
 
-	if state.Region != defaultRegion || state.KubernetesVersion != defaultK8sVersion || state.SpotServerClass != defaultSpotClass {
-		t.Fatalf("defaults not applied: %+v", state)
+	if state.Region != defaultRegion {
+		t.Fatalf("Region = %q, want %q", state.Region, defaultRegion)
+	}
+	if state.KubernetesVersion != defaultK8sVersion {
+		t.Fatalf("KubernetesVersion = %q, want %q", state.KubernetesVersion, defaultK8sVersion)
+	}
+	if state.SpotServerClass != defaultSpotClass {
+		t.Fatalf("SpotServerClass = %q, want %q", state.SpotServerClass, defaultSpotClass)
+	}
+	if state.SpotNodeCount != int(defaultSpotCount) {
+		t.Fatalf("SpotNodeCount = %d, want %d", state.SpotNodeCount, defaultSpotCount)
 	}
 }

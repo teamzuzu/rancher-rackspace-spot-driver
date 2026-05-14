@@ -191,7 +191,7 @@ func (c *spotClient) deleteOnDemandNodePools(ctx context.Context, s *clusterStat
 		if err := c.api.DeleteOnDemandNodePool(ctx, c.org, p.Name); err != nil && !isNotFound(err) {
 			return fmt.Errorf("failed to delete on-demand node pool %s: %w", p.Name, err)
 		}
-		logrus.Infof("deleted on-demand node pool %s (on-demand disabled)", p.Name)
+		logrus.Infof("deleted on-demand node pool %s", p.Name)
 	}
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rancher/kontainer-engine/types"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -237,7 +238,11 @@ func (s *clusterState) save(info *types.ClusterInfo) error {
 		info.Metadata = map[string]string{}
 	}
 	info.Metadata[metaStateKey] = string(data)
-	info.Password = s.RefreshToken
+	// Only overwrite Password when we have a token; prevents silently clearing
+	// the credential on SetClusterSize/SetVersion if the token wasn't round-tripped.
+	if s.RefreshToken != "" {
+		info.Password = s.RefreshToken
+	}
 	return nil
 }
 
@@ -274,7 +279,9 @@ func mergeState(existing *clusterState, opts *types.DriverOptions) {
 
 	if raw := getStringOption(opts, flagAdditionalSpotPools, "additionalSpotPools"); raw != "" {
 		var pools []SpotPoolConfig
-		if err := json.Unmarshal([]byte(raw), &pools); err == nil {
+		if err := json.Unmarshal([]byte(raw), &pools); err != nil {
+			logrus.Warnf("ignoring invalid additionalSpotPools JSON: %v", err)
+		} else {
 			existing.AdditionalSpotPools = pools
 		}
 	}

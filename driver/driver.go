@@ -142,6 +142,11 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 func (d *Driver) GetDriverUpdateOptions(ctx context.Context) (*types.DriverFlags, error) {
 	flags := &types.DriverFlags{
 		Options: map[string]*types.Flag{
+			flagRefreshToken: {
+				Type:     types.StringType,
+				Usage:    "Rackspace Spot refresh token (update to rotate credentials)",
+				Password: true,
+			},
 			flagK8sVersion: {
 				Type:  types.StringType,
 				Usage: "Kubernetes version to upgrade to",
