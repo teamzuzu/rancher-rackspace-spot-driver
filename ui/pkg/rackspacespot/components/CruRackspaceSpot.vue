@@ -171,7 +171,7 @@
           <LabeledInput
             v-model:value="config.spotBidPrice"
             label="Bid Price (USD/hr)"
-            placeholder="0.50"
+            placeholder="0.01"
             :mode="mode"
           />
         </div>
@@ -246,7 +246,7 @@
           <LabeledInput
             v-model:value="pool.bidPrice"
             label="Bid Price (USD/hr)"
-            placeholder="0.50"
+            placeholder="0.01"
             :mode="mode"
           />
         </div>
@@ -368,7 +368,7 @@ function emptyPool() {
   return {
     serverClass:  '',
     nodeCount:    1,
-    bidPrice:     '0.50',
+    bidPrice:     '0.01',
     autoscaling:  false,
     minNodes:     1,
     maxNodes:     10,
