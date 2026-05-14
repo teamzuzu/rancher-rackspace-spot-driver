@@ -54,24 +54,20 @@ The Rancher Rackspace Spot Driver is a [kontainer-engine](https://github.com/ran
 
 === "Install the driver"
 
+    1. In Rancher, go to **☰ → Extensions**
+    2. Click **⋮ → Manage Extension Repositories → Create**
+    3. Set **Name** to `rackspace-spot` and **URL** to `https://teamzuzu.github.io/rancher-rackspace-spot-driver`
+    4. Click **Create**, then go to **☰ → Extensions → Available**
+    5. Find **Rackspace Spot** and click **Install**
+
+    Or via Helm:
+
     ```bash
-    # Pull the driver binary (linux/amd64)
-    docker pull ghcr.io/teamzuzu/rancher-rackspace-spot-driver:latest
-
-    # Or download the binary directly from a release
-    curl -LO https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/latest/download/rancher-rackspace-spot-driver_linux_amd64.tar.gz
-    tar -xzf rancher-rackspace-spot-driver_linux_amd64.tar.gz
+    helm repo add rackspace-spot https://teamzuzu.github.io/rancher-rackspace-spot-driver
+    helm repo update
+    helm install rackspacespot rackspace-spot/rackspacespot \
+      --namespace cattle-ui-plugin-system --create-namespace
     ```
-
-=== "Register in Rancher"
-
-    1. In Rancher, go to **☰ → Cluster Management → Drivers → Cluster Drivers**
-    2. Click **Add Cluster Driver**
-    3. Fill in:
-        - **Download URL**: release asset URL from GitHub
-        - **Custom UI URL**: *(leave blank for now)*
-        - **Whitelist Domains**: `rackspace.com`
-    4. Click **Create** and wait for the driver to activate
 
 === "Create a cluster"
 
@@ -109,7 +105,7 @@ The driver runs as a sidecar process inside the Rancher container. Rancher calls
 
 | Requirement | Version |
 |---|---|
-| Rancher | ≥ 2.6 |
+| Rancher | ≥ 2.10 |
 | Rackspace Spot account | Any |
 | Go (to build from source) | ≥ 1.24 |
 

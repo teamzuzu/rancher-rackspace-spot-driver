@@ -507,7 +507,12 @@ export default defineComponent({
           }))
           .sort((a, b) => a.name.localeCompare(b.name));
       } catch (e) {
-        this.priceError = `Could not load server classes: ${e.message}`;
+        const isCors = e.message === 'Failed to fetch' || e.message?.includes('NetworkError');
+        if (isCors) {
+          this.priceError = `Could not load server classes: the Rackspace Spot API does not allow direct browser requests from this Rancher instance (CORS restriction). View available server classes at spot.rackspace.com.`;
+        } else {
+          this.priceError = `Could not load server classes: ${e.message}`;
+        }
       } finally {
         this.priceLoading = false;
       }

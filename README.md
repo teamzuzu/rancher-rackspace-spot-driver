@@ -125,8 +125,8 @@ All options are set in the Rancher cluster creation form.
 | Option | Required | Default | Description |
 |---|---|---|---|
 | `rackspace-spot-region` | | `colo-lax-1` | Rackspace Spot region |
-| `kubernetes-version` | | `1.28` | Kubernetes version for the CloudSpace |
-| `cni` | | `calico` | CNI plugin (`calico` or `flannel`) |
+| `kubernetes-version` | | `1.32.9` | Kubernetes version for the CloudSpace |
+| `cni` | | `calico` | CNI plugin (`calico`, `cilium`, or `byocni`) |
 | `gpu-enabled` | | `false` | Enable GPU support on the CloudSpace |
 | `preemption-webhook-url` | | — | Webhook called before spot nodes are preempted |
 | `deployment-type` | | — | CloudSpace deployment type (provider-specific) |
@@ -137,7 +137,7 @@ A spot pool is always created. Spot nodes are preemptible and billed at your bid
 
 | Option | Required | Default | Description |
 |---|---|---|---|
-| `spot-node-pool-name` | | `spot-pool` | Name for the spot node pool |
+| `spot-node-pool-name` | | *(auto-generated UUID)* | Name for the spot node pool |
 | `spot-server-class` | | `rxtx.4xlarge-mi300x` | Hardware class for spot nodes |
 | `spot-node-count` | | `3` | Desired number of spot nodes |
 | `spot-bid-price` | | `0.50` | Maximum price per node-hour (USD) |
@@ -152,7 +152,7 @@ An on-demand pool provides stable capacity that is never preempted. Useful for s
 | Option | Required | Default | Description |
 |---|---|---|---|
 | `on-demand-enabled` | | `false` | Create an on-demand node pool |
-| `on-demand-node-pool-name` | | `on-demand-pool` | Name for the on-demand pool |
+| `on-demand-node-pool-name` | | *(auto-generated UUID)* | Name for the on-demand pool |
 | `on-demand-server-class` | | — | Hardware class for on-demand nodes |
 | `on-demand-node-count` | | `1` | Desired number of on-demand nodes |
 | `on-demand-price-per-hour` | | — | Maximum price per node-hour (USD) |
@@ -220,17 +220,17 @@ Browser (Rancher Dashboard)
   └─ Vue UI Extension (ui/pkg/rackspacespot/) ─── served from GitHub Pages
         │ writes genericEngineConfig
         ▼
-Rancher API → gRPC → rancher-rackspace-spot-driver (Go binary)
+Rancher API → gRPC → kontainer-engine-driver-rackspacespot (Go binary)
                               │
                               ├─ Create    → CreateCloudspace + CreateSpotNodePool
-                              ├─ PostCheck → WaitForRunning + GetKubeconfig + ServiceAccount
+                              ├─ PostCheck → WaitForReady + GetKubeconfig + ServiceAccount
                               ├─ Update    → UpdateSpotNodePool (scale / bid price)
                               └─ Remove    → DeleteNodePools + DeleteCloudspace
 ```
 
 The driver binary is started by Rancher as a sidecar process. Rancher communicates with it over a local gRPC socket, then terminates it when the operation completes.
 
-State (organization, cloudspace name, pool configuration) is serialised as JSON into `ClusterInfo.Metadata` and passed back on every subsequent call, so the driver is fully stateless between invocations.
+State (organization, cloudspace name, pool configuration) is serialised as JSON into `ClusterInfo.Metadata` and passed back on every subsequent call, so the driver is fully stateless between invocations. The refresh token is stored separately in `ClusterInfo.Password` (not in the JSON blob) so it is never logged.
 
 The UI extension (`ui/`) is a separate build artifact compiled with `@rancher/shell` 3.0.8. It is registered as a `kontainer` provisioner and writes cluster config into `cluster.genericEngineConfig`, which Rancher passes through to the driver binary.
 

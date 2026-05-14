@@ -25,15 +25,15 @@ cd rancher-rackspace-spot-driver
 go mod tidy
 
 # Build for your current platform
-go build -o bin/rancher-rackspace-spot-driver .
+go build -o bin/kontainer-engine-driver-rackspacespot .
 
 # Cross-compile for linux/amd64
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-  go build -ldflags "-s -w" -o bin/rancher-rackspace-spot-driver .
+  go build -ldflags "-s -w" -o bin/kontainer-engine-driver-rackspacespot .
 
 # Cross-compile for linux/arm64
 GOOS=linux GOARCH=arm64 CGO_ENABLED=0 \
-  go build -ldflags "-s -w" -o bin/rancher-rackspace-spot-driver-arm64 .
+  go build -ldflags "-s -w" -o bin/kontainer-engine-driver-rackspacespot-arm64 .
 ```
 
 ---
@@ -117,7 +117,7 @@ Rancher calls the driver over a local gRPC socket. The sequence for cluster crea
 
 ```
 Rancher → Create()     → provisions CloudSpace + node pools
-        → PostCheck()  → waits for Running, fetches kubeconfig, bootstraps service account
+        → PostCheck()  → waits for Ready, fetches kubeconfig, bootstraps service account
 ```
 
 For updates:
@@ -135,7 +135,7 @@ Rancher → Remove()     → deletes all node pools, then deletes the CloudSpace
 
 ### State persistence
 
-The driver serializes cluster state (credentials, pool config, CloudSpace name) into `ClusterInfo.Metadata["state"]` as JSON. Rancher stores this blob and passes it back on every subsequent call. There is no external state store.
+The driver serializes cluster state (pool config, CloudSpace name, organization) into `ClusterInfo.Metadata["state"]` as JSON. The refresh token is stored separately in `ClusterInfo.Password` so it is never included in the logged metadata blob. Rancher stores both and passes them back on every subsequent call. There is no external state store.
 
 ### k8s dependency pinning
 
@@ -157,7 +157,7 @@ The workflow will:
 - Validate the version format
 - Create and push a signed git tag
 - Run GoReleaser to build linux/amd64 and linux/arm64 binaries and publish a GitHub Release
-- Build and push a multi-arch container image to `ghcr.io/teamzuzu/rancher-rackspace-spot-driver`
+- Build and push a multi-arch container image to `ghcr.io/teamzuzu/rancher-rackspace-spot-driver` (the image contains the `kontainer-engine-driver-rackspacespot` binary)
 
 !!! note "Permissions"
     Only repository maintainers with **write** access can trigger the release workflow.
