@@ -348,12 +348,12 @@ const CLIENT_ID = 'mwG3lUMV8KyeMqHe4fJ5Bb3nM1vBvRNa';
 
 const DEFAULTS = {
   driverName:              DRIVER,
-  rackspaceSpotRegion:     'us-east-iad-1',
-  kubernetesVersion:       '1.33.0',
+  rackspaceSpotRegion:     'colo-lax-1',
+  kubernetesVersion:       '1.32.9',
   cni:                     'calico',
   gpuEnabled:              false,
-  spotServerClass:         'ch.vs1.medium-iad',
-  spotNodeCount:           1,
+  spotServerClass:         'rxtx.4xlarge-mi300x',
+  spotNodeCount:           3,
   spotBidPrice:            '0.50',
   spotAutoscalingEnabled:  false,
   spotAutoscalingMinNodes: 1,
@@ -448,9 +448,9 @@ export default defineComponent({
     serverClassPlaceholder() {
       if (this.serverClasses.length) {
         const first = this.filteredServerClasses[0];
-        return first ? first.name : 'e.g. ch.vs1.medium-iad';
+        return first ? first.name : 'e.g. rxtx.4xlarge-mi300x';
       }
-      return 'e.g. ch.vs1.medium-iad';
+      return 'e.g. rxtx.4xlarge-mi300x';
     },
   },
 

@@ -146,10 +146,11 @@ func (c *spotClient) reconcileSpotNodePools(ctx context.Context, s *clusterState
 	return nil
 }
 
-// ensureOnDemandNodePool creates or updates the on-demand node pool when enabled.
-func (c *spotClient) ensureOnDemandNodePool(ctx context.Context, s *clusterState) error {
+// reconcileOnDemandNodePool creates, updates, or removes the on-demand node pool
+// so Rackspace matches the Rancher cluster configuration.
+func (c *spotClient) reconcileOnDemandNodePool(ctx context.Context, s *clusterState) error {
 	if !s.OnDemandEnabled {
-		return nil
+		return c.deleteOnDemandNodePools(ctx, s)
 	}
 
 	existing, err := c.api.GetOnDemandNodePool(ctx, c.org, s.OnDemandPoolName)
@@ -181,6 +182,20 @@ func (c *spotClient) ensureOnDemandNodePool(ctx context.Context, s *clusterState
 	return nil
 }
 
+func (c *spotClient) deleteOnDemandNodePools(ctx context.Context, s *clusterState) error {
+	pools, err := c.api.ListOnDemandNodePools(ctx, c.org, s.CloudspaceName)
+	if err != nil && !isNotFound(err) {
+		return fmt.Errorf("failed to list on-demand node pools: %w", err)
+	}
+	for _, p := range pools {
+		if err := c.api.DeleteOnDemandNodePool(ctx, c.org, p.Name); err != nil && !isNotFound(err) {
+			return fmt.Errorf("failed to delete on-demand node pool %s: %w", p.Name, err)
+		}
+		logrus.Infof("deleted on-demand node pool %s", p.Name)
+	}
+	return nil
+}
+
 // deleteNodePools removes all node pools for a cloudspace before deletion.
 func (c *spotClient) deleteNodePools(ctx context.Context, s *clusterState) error {
 	spotPools, err := c.api.ListSpotNodePools(ctx, c.org, s.CloudspaceName)
@@ -194,18 +209,7 @@ func (c *spotClient) deleteNodePools(ctx context.Context, s *clusterState) error
 		logrus.Infof("deleted spot node pool %s", p.Name)
 	}
 
-	odmPools, err := c.api.ListOnDemandNodePools(ctx, c.org, s.CloudspaceName)
-	if err != nil && !isNotFound(err) {
-		return fmt.Errorf("failed to list on-demand node pools: %w", err)
-	}
-	for _, p := range odmPools {
-		if err := c.api.DeleteOnDemandNodePool(ctx, c.org, p.Name); err != nil && !isNotFound(err) {
-			return fmt.Errorf("failed to delete on-demand node pool %s: %w", p.Name, err)
-		}
-		logrus.Infof("deleted on-demand node pool %s", p.Name)
-	}
-
-	return nil
+	return c.deleteOnDemandNodePools(ctx, s)
 }
 
 // waitForCloudspace polls until the cloudspace reaches desiredStatus or the context is cancelled.

@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/rancher/kontainer-engine/drivers/options"
 	"github.com/rancher/kontainer-engine/types"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -29,19 +29,19 @@ const (
 	flagSpotMinNodes    = "spot-autoscaling-min-nodes"
 	flagSpotMaxNodes    = "spot-autoscaling-max-nodes"
 
-	flagOnDemandEnabled  = "on-demand-enabled"
-	flagOnDemandPoolName = "on-demand-node-pool-name"
-	flagOnDemandClass    = "on-demand-server-class"
-	flagOnDemandCount    = "on-demand-node-count"
-	flagOnDemandPrice        = "on-demand-price-per-hour"
-	flagAdditionalSpotPools  = "additional-spot-pools"
+	flagOnDemandEnabled     = "on-demand-enabled"
+	flagOnDemandPoolName    = "on-demand-node-pool-name"
+	flagOnDemandClass       = "on-demand-server-class"
+	flagOnDemandCount       = "on-demand-node-count"
+	flagOnDemandPrice       = "on-demand-price-per-hour"
+	flagAdditionalSpotPools = "additional-spot-pools"
 
-	defaultRegion      = "colo-lax-1"
-	defaultK8sVersion  = "1.32.9"
-	defaultCNI         = "calico"
-	defaultSpotClass = "rxtx.4xlarge-mi300x"
-	defaultSpotCount = int64(3)
-	defaultSpotBid   = "0.50"
+	defaultRegion     = "colo-lax-1"
+	defaultK8sVersion = "1.32.9"
+	defaultCNI        = "calico"
+	defaultSpotClass  = "rxtx.4xlarge-mi300x"
+	defaultSpotCount  = int64(3)
+	defaultSpotBid    = "0.50"
 
 	metaStateKey = "state"
 
@@ -62,7 +62,7 @@ type SpotPoolConfig struct {
 
 type clusterState struct {
 	// Auth
-	RefreshToken string `json:"refreshToken"`
+	RefreshToken string `json:"refreshToken,omitempty"`
 	Organization string `json:"organization"`
 
 	// Cluster identity
@@ -99,46 +99,35 @@ type clusterState struct {
 }
 
 func stateFromOptions(opts *types.DriverOptions) (*clusterState, error) {
-	// Rancher stores genericEngineConfig keys in camelCase; we accept both forms.
-	str := func(kebab, camel string) string {
-		return options.GetValueFromDriverOptions(opts, types.StringType, kebab, camel).(string)
-	}
-	bl := func(kebab, camel string) bool {
-		return options.GetValueFromDriverOptions(opts, types.BoolType, kebab, camel).(bool)
-	}
-	num := func(kebab, camel string) int64 {
-		return options.GetValueFromDriverOptions(opts, types.IntType, kebab, camel).(int64)
-	}
-
 	s := &clusterState{
-		RefreshToken:      str(flagRefreshToken, "rackspaceSpotRefreshToken"),
-		Organization:      str(flagOrganization, "rackspaceSpotOrganization"),
-		Region:            str(flagRegion, "rackspaceSpotRegion"),
-		KubernetesVersion: str(flagK8sVersion, "kubernetesVersion"),
-		CNI:               str(flagCNI, "cni"),
-		GPUEnabled:        bl(flagGPUEnabled, "gpuEnabled"),
-		PreemptionWebhook: str(flagPreemptionWebhook, "preemptionWebhookUrl"),
-		DeploymentType:    str(flagDeploymentType, "deploymentType"),
-		SpotPoolName:      str(flagSpotPoolName, "spotNodePoolName"),
-		SpotServerClass:   str(flagSpotServerClass, "spotServerClass"),
-		SpotBidPrice:      str(flagSpotBidPrice, "spotBidPrice"),
-		SpotAutoscaling:   bl(flagSpotAutoscaling, "spotAutoscalingEnabled"),
-		SpotMinNodes:      num(flagSpotMinNodes, "spotAutoscalingMinNodes"),
-		SpotMaxNodes:      num(flagSpotMaxNodes, "spotAutoscalingMaxNodes"),
-		OnDemandEnabled:   bl(flagOnDemandEnabled, "onDemandEnabled"),
-		OnDemandPoolName:  str(flagOnDemandPoolName, "onDemandNodePoolName"),
-		OnDemandClass:     str(flagOnDemandClass, "onDemandServerClass"),
-		OnDemandPrice:     str(flagOnDemandPrice, "onDemandPricePerHour"),
+		RefreshToken:      getStringOption(opts, flagRefreshToken, "rackspaceSpotRefreshToken"),
+		Organization:      getStringOption(opts, flagOrganization, "rackspaceSpotOrganization"),
+		Region:            getStringOption(opts, flagRegion, "rackspaceSpotRegion"),
+		KubernetesVersion: getStringOption(opts, flagK8sVersion, "kubernetesVersion"),
+		CNI:               getStringOption(opts, flagCNI, "cni"),
+		GPUEnabled:        getBoolOption(opts, flagGPUEnabled, "gpuEnabled"),
+		PreemptionWebhook: getStringOption(opts, flagPreemptionWebhook, "preemptionWebhookUrl"),
+		DeploymentType:    getStringOption(opts, flagDeploymentType, "deploymentType"),
+		SpotPoolName:      getStringOption(opts, flagSpotPoolName, "spotNodePoolName"),
+		SpotServerClass:   getStringOption(opts, flagSpotServerClass, "spotServerClass"),
+		SpotBidPrice:      getStringOption(opts, flagSpotBidPrice, "spotBidPrice"),
+		SpotAutoscaling:   getBoolOption(opts, flagSpotAutoscaling, "spotAutoscalingEnabled"),
+		SpotMinNodes:      getIntOption(opts, flagSpotMinNodes, "spotAutoscalingMinNodes"),
+		SpotMaxNodes:      getIntOption(opts, flagSpotMaxNodes, "spotAutoscalingMaxNodes"),
+		OnDemandEnabled:   getBoolOption(opts, flagOnDemandEnabled, "onDemandEnabled"),
+		OnDemandPoolName:  getStringOption(opts, flagOnDemandPoolName, "onDemandNodePoolName"),
+		OnDemandClass:     getStringOption(opts, flagOnDemandClass, "onDemandServerClass"),
+		OnDemandPrice:     getStringOption(opts, flagOnDemandPrice, "onDemandPricePerHour"),
 	}
 
-	if n := num(flagSpotNodeCount, "spotNodeCount"); n > 0 {
+	if n, ok := lookupIntOption(opts, flagSpotNodeCount, "spotNodeCount"); ok {
 		s.SpotNodeCount = int(n)
 	}
-	if n := num(flagOnDemandCount, "onDemandNodeCount"); n > 0 {
+	if n, ok := lookupIntOption(opts, flagOnDemandCount, "onDemandNodeCount"); ok {
 		s.OnDemandCount = int(n)
 	}
 
-	if raw := str(flagAdditionalSpotPools, "additionalSpotPools"); raw != "" {
+	if raw := getStringOption(opts, flagAdditionalSpotPools, "additionalSpotPools"); raw != "" {
 		if err := json.Unmarshal([]byte(raw), &s.AdditionalSpotPools); err != nil {
 			return nil, fmt.Errorf("failed to parse additional spot pools: %w", err)
 		}
@@ -222,17 +211,26 @@ func validate(s *clusterState) error {
 
 func stateFromClusterInfo(info *types.ClusterInfo) (*clusterState, error) {
 	s := &clusterState{}
+	if info == nil {
+		return s, nil
+	}
 	if info.Metadata == nil || info.Metadata[metaStateKey] == "" {
+		s.RefreshToken = info.Password
 		return s, nil
 	}
 	if err := json.Unmarshal([]byte(info.Metadata[metaStateKey]), s); err != nil {
 		return nil, fmt.Errorf("failed to deserialize cluster state: %w", err)
 	}
+	if s.RefreshToken == "" {
+		s.RefreshToken = info.Password
+	}
 	return s, nil
 }
 
 func (s *clusterState) save(info *types.ClusterInfo) error {
-	data, err := json.Marshal(s)
+	persisted := *s
+	persisted.RefreshToken = ""
+	data, err := json.Marshal(&persisted)
 	if err != nil {
 		return fmt.Errorf("failed to serialize cluster state: %w", err)
 	}
@@ -240,51 +238,102 @@ func (s *clusterState) save(info *types.ClusterInfo) error {
 		info.Metadata = map[string]string{}
 	}
 	info.Metadata[metaStateKey] = string(data)
+	// Only overwrite Password when we have a token; prevents silently clearing
+	// the credential on SetClusterSize/SetVersion if the token wasn't round-tripped.
+	if s.RefreshToken != "" {
+		info.Password = s.RefreshToken
+	}
 	return nil
 }
 
 // mergeState overwrites the mutable fields from opts into an existing state,
 // preserving identity fields (CloudspaceName, Organization) that cannot change.
 func mergeState(existing *clusterState, opts *types.DriverOptions) {
-	str := func(kebab, camel string) string {
-		return options.GetValueFromDriverOptions(opts, types.StringType, kebab, camel).(string)
+	if v := getStringOption(opts, flagRefreshToken, "rackspaceSpotRefreshToken"); v != "" {
+		existing.RefreshToken = v
 	}
-	bl := func(kebab, camel string) bool {
-		return options.GetValueFromDriverOptions(opts, types.BoolType, kebab, camel).(bool)
-	}
-	num := func(kebab, camel string) int64 {
-		return options.GetValueFromDriverOptions(opts, types.IntType, kebab, camel).(int64)
-	}
-
-	if v := str(flagK8sVersion, "kubernetesVersion"); v != "" {
+	if v := getStringOption(opts, flagK8sVersion, "kubernetesVersion"); v != "" {
 		existing.KubernetesVersion = v
 	}
-	if v := str(flagSpotBidPrice, "spotBidPrice"); v != "" {
+	if v := getStringOption(opts, flagSpotBidPrice, "spotBidPrice"); v != "" {
 		existing.SpotBidPrice = v
 	}
-	if n := num(flagSpotNodeCount, "spotNodeCount"); n > 0 {
+	if n, ok := lookupIntOption(opts, flagSpotNodeCount, "spotNodeCount"); ok {
 		existing.SpotNodeCount = int(n)
 	}
-	if v := bl(flagSpotAutoscaling, "spotAutoscalingEnabled"); v {
+	if v, ok := lookupBoolOption(opts, flagSpotAutoscaling, "spotAutoscalingEnabled"); ok {
 		existing.SpotAutoscaling = v
 	}
-	if n := num(flagSpotMinNodes, "spotAutoscalingMinNodes"); n > 0 {
+	if n, ok := lookupIntOption(opts, flagSpotMinNodes, "spotAutoscalingMinNodes"); ok {
 		existing.SpotMinNodes = n
 	}
-	if n := num(flagSpotMaxNodes, "spotAutoscalingMaxNodes"); n > 0 {
+	if n, ok := lookupIntOption(opts, flagSpotMaxNodes, "spotAutoscalingMaxNodes"); ok {
 		existing.SpotMaxNodes = n
 	}
-	if v := bl(flagOnDemandEnabled, "onDemandEnabled"); v {
+	if v, ok := lookupBoolOption(opts, flagOnDemandEnabled, "onDemandEnabled"); ok {
 		existing.OnDemandEnabled = v
 	}
-	if n := num(flagOnDemandCount, "onDemandNodeCount"); n > 0 {
+	if n, ok := lookupIntOption(opts, flagOnDemandCount, "onDemandNodeCount"); ok {
 		existing.OnDemandCount = int(n)
 	}
 
-	if raw := str(flagAdditionalSpotPools, "additionalSpotPools"); raw != "" {
+	if raw := getStringOption(opts, flagAdditionalSpotPools, "additionalSpotPools"); raw != "" {
 		var pools []SpotPoolConfig
-		if err := json.Unmarshal([]byte(raw), &pools); err == nil {
+		if err := json.Unmarshal([]byte(raw), &pools); err != nil {
+			logrus.Warnf("ignoring invalid additionalSpotPools JSON: %v", err)
+		} else {
 			existing.AdditionalSpotPools = pools
 		}
 	}
+}
+
+func getStringOption(opts *types.DriverOptions, keys ...string) string {
+	value, _ := lookupStringOption(opts, keys...)
+	return value
+}
+
+func getBoolOption(opts *types.DriverOptions, keys ...string) bool {
+	value, _ := lookupBoolOption(opts, keys...)
+	return value
+}
+
+func getIntOption(opts *types.DriverOptions, keys ...string) int64 {
+	value, _ := lookupIntOption(opts, keys...)
+	return value
+}
+
+func lookupStringOption(opts *types.DriverOptions, keys ...string) (string, bool) {
+	if opts == nil {
+		return "", false
+	}
+	for _, key := range keys {
+		if value, ok := opts.StringOptions[key]; ok {
+			return value, true
+		}
+	}
+	return "", false
+}
+
+func lookupBoolOption(opts *types.DriverOptions, keys ...string) (bool, bool) {
+	if opts == nil {
+		return false, false
+	}
+	for _, key := range keys {
+		if value, ok := opts.BoolOptions[key]; ok {
+			return value, true
+		}
+	}
+	return false, false
+}
+
+func lookupIntOption(opts *types.DriverOptions, keys ...string) (int64, bool) {
+	if opts == nil {
+		return 0, false
+	}
+	for _, key := range keys {
+		if value, ok := opts.IntOptions[key]; ok {
+			return value, true
+		}
+	}
+	return 0, false
 }

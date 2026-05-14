@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/kontainer-engine/types"
 	spotv1 "github.com/rackspace-spot/spot-go-sdk/api/v1"
+	"github.com/rancher/kontainer-engine/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,10 +23,10 @@ func NewDriver() types.Driver {
 	return &Driver{
 		driverCapabilities: types.Capabilities{
 			Capabilities: map[int64]bool{
-				types.GetVersionCapability:      true,
-				types.SetVersionCapability:      true,
-				types.GetClusterSizeCapability:  true,
-				types.SetClusterSizeCapability:  true,
+				types.GetVersionCapability:     true,
+				types.SetVersionCapability:     true,
+				types.GetClusterSizeCapability: true,
+				types.SetClusterSizeCapability: true,
 			},
 		},
 	}
@@ -142,6 +142,11 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 func (d *Driver) GetDriverUpdateOptions(ctx context.Context) (*types.DriverFlags, error) {
 	flags := &types.DriverFlags{
 		Options: map[string]*types.Flag{
+			flagRefreshToken: {
+				Type:     types.StringType,
+				Usage:    "Rackspace Spot refresh token (update to rotate credentials)",
+				Password: true,
+			},
 			flagK8sVersion: {
 				Type:  types.StringType,
 				Usage: "Kubernetes version to upgrade to",
@@ -188,7 +193,7 @@ func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterI
 	defer func() {
 		if r := recover(); r != nil {
 			retErr = fmt.Errorf("[%s] Create() panic: %v", driverName, r)
-			logrus.Errorf(retErr.Error())
+			logrus.Error(retErr)
 		}
 	}()
 
@@ -240,11 +245,11 @@ func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterI
 	}
 	logrus.Infof("[%s] reconcileSpotNodePools OK", driverName)
 
-	if err := client.ensureOnDemandNodePool(ctx, s); err != nil {
-		logrus.Errorf("[%s] ensureOnDemandNodePool failed: %v", driverName, err)
+	if err := client.reconcileOnDemandNodePool(ctx, s); err != nil {
+		logrus.Errorf("[%s] reconcileOnDemandNodePool failed: %v", driverName, err)
 		return info, err
 	}
-	logrus.Infof("[%s] ensureOnDemandNodePool OK", driverName)
+	logrus.Infof("[%s] reconcileOnDemandNodePool OK", driverName)
 
 	if err := s.save(info); err != nil {
 		return info, err
@@ -273,7 +278,7 @@ func (d *Driver) Update(ctx context.Context, clusterInfo *types.ClusterInfo, opt
 	if err := client.reconcileSpotNodePools(ctx, s); err != nil {
 		return clusterInfo, err
 	}
-	if err := client.ensureOnDemandNodePool(ctx, s); err != nil {
+	if err := client.reconcileOnDemandNodePool(ctx, s); err != nil {
 		return clusterInfo, err
 	}
 

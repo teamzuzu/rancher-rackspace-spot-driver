@@ -1,28 +1,40 @@
+version: "2"
 linters:
   enable:
     - errcheck
-    - gosimple
+    - gocritic
     - govet
     - ineffassign
-    - staticcheck
-    - unused
-    - gofmt
     - misspell
     - revive
-    - gocritic
-
-linters-settings:
-  revive:
+    - staticcheck
+  settings:
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      - name: exported
-        disabled: true  # driver methods don't all need doc comments
-
+      - path: driver/driver.go
+        text: unused
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-rules:
-    # ETCDSave/Restore/RemoveSnapshot intentionally return unsupported errors
-    - path: driver/driver.go
-      text: "unused"
   max-same-issues: 0
-
-run:
-  timeout: 5m
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
