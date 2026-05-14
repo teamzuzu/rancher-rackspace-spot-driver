@@ -182,15 +182,14 @@ jobs:
         id: checksum
         run: |
           VERSION="${{ needs.validate.outputs.version }}"
-          gh release download "${VERSION}" \
-            --pattern "checksums.txt" \
-            --dir /tmp/release-checksums \
-            --repo "${GITHUB_REPOSITORY}"
+          mkdir -p /tmp/release-checksums
+          curl -fsSL \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION}/checksums.txt" \
+            -o /tmp/release-checksums/checksums.txt
           CHECKSUM=$(grep "rancher-rackspace-spot-driver_linux_amd64.tar.gz" \
             /tmp/release-checksums/checksums.txt | awk '{print $1}')
           echo "amd64=${CHECKSUM}" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Package Helm chart
         run: |
@@ -217,10 +216,17 @@ jobs:
       - name: Upload Helm chart to release
         run: |
           VERSION="${{ needs.validate.outputs.version }}"
-          gh release upload "${VERSION}" release_artifacts/rackspacespot-*.tgz \
-            --repo "${GITHUB_REPOSITORY}"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VER="${VERSION#v}"
+          RELEASE_ID=$(curl -fsSL \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${VERSION}" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+          curl -fsSL \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/gzip" \
+            --data-binary "@release_artifacts/rackspacespot-${VER}.tgz" \
+            "https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=rackspacespot-${VER}.tgz"
 
       - name: Update Helm repo index
         run: |
@@ -252,6 +258,9 @@ jobs:
 
       - name: Trigger docs site rebuild
         run: |
-          gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          curl -fsSL \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/pages.yml/dispatches" \
+            -d '{"ref":"main"}'
