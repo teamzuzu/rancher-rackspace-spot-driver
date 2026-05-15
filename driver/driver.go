@@ -266,6 +266,7 @@ func (d *Driver) Update(ctx context.Context, clusterInfo *types.ClusterInfo, opt
 	}
 
 	mergeState(s, opts)
+	applyDefaults(s)
 
 	client, err := newSpotClient(ctx, s.RefreshToken, s.Organization)
 	if err != nil {
