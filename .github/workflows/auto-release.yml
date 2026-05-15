@@ -1,0 +1,38 @@
+name: Auto-release
+
+# Runs on every push to main that isn't a bot commit.
+# Commits containing [skip ci] (e.g. the release bot's own commits) are
+# automatically ignored by GitHub Actions, so there is no release loop.
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write  # create and push tags
+
+jobs:
+  bump-and-tag:
+    name: Bump patch version and tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Compute next patch version and push tag
+        run: |
+          LATEST=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -1)
+          [ -z "$LATEST" ] && LATEST="v0.0.0"
+          VER="${LATEST#v}"
+          MAJOR="${VER%%.*}"; REST="${VER#*.}"
+          MINOR="${REST%%.*}"; PATCH="${REST#*.}"
+          NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+          echo "Latest: $LATEST  →  Next: $NEXT"
+          git tag -a "$NEXT" -m "Release $NEXT"
+          git push origin "$NEXT"
