@@ -411,7 +411,6 @@ export default defineComponent({
       cniOptions:           [
         { label: 'calico', value: 'calico' },
         { label: 'cilium', value: 'cilium' },
-        { label: 'byocni', value: 'byocni' },
       ],
       k8sVersionOptions: [
         { label: '1.33.0', value: '1.33.0' },
