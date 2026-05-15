@@ -54,18 +54,9 @@
     <div class="row">
       <div class="col span-4">
         <LabeledSelect
-          v-if="regionOptions.length"
           v-model:value="config.rackspaceSpotRegion"
           label="Region"
           :options="regionOptions"
-          :required="true"
-          :mode="mode"
-        />
-        <LabeledInput
-          v-else
-          v-model:value="config.rackspaceSpotRegion"
-          label="Region"
-          placeholder="e.g. us-east-iad-1"
           :required="true"
           :mode="mode"
         />
@@ -384,7 +375,7 @@ const CLIENT_ID = 'mwG3lUMV8KyeMqHe4fJ5Bb3nM1vBvRNa';
 
 const DEFAULTS = {
   driverName:              DRIVER,
-  rackspaceSpotRegion:     '',
+  rackspaceSpotRegion:     'us-east-iad-1',
   kubernetesVersion:       '1.33.0',
   cni:                     'calico',
   gpuEnabled:              false,
@@ -455,6 +446,10 @@ export default defineComponent({
       additionalSpotPools,
       errors:               [],
       availableRegions:     [],
+      knownRegions: [
+        { name: 'us-east-iad-1', description: 'US East (Dulles, VA)' },
+        { name: 'us-west-sjc-1', description: 'US West (San Jose, CA)' },
+      ],
       serverClasses:        [],
       priceLoading:         false,
       priceError:           null,
@@ -490,7 +485,8 @@ export default defineComponent({
       return this.serverClasses.filter(sc => sc.region === region);
     },
     regionOptions() {
-      return this.availableRegions.map(r => ({
+      const source = this.availableRegions.length ? this.availableRegions : this.knownRegions;
+      return source.map(r => ({
         label: r.description ? `${r.name} — ${r.description}` : r.name,
         value: r.name,
       }));
