@@ -14,7 +14,6 @@ on:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
-      - 'Dockerfile'
       - 'deploy/charts/**'
       - 'ui/pkg/**'
 

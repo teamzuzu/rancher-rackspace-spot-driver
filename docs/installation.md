@@ -116,26 +116,3 @@ Existing clusters are not affected until their next reconciliation.
 !!! warning
     Delete all Rackspace Spot clusters **before** removing the driver. If you remove the driver first, Rancher loses the ability to call the cloud API to clean up the underlying resources.
 
----
-
-## Installing via container (advanced)
-
-If you manage Rancher with Helm in an air-gapped environment where Rancher cannot reach GitHub, you can inject the driver binary as an init container:
-
-```yaml
-# values.yaml excerpt
-extraInitContainers:
-  - name: spot-driver
-    image: ghcr.io/teamzuzu/rancher-rackspace-spot-driver:latest
-    command: ["/bin/sh", "-c", "cp /kontainer-engine-driver-rackspacespot /drivers/"]
-    volumeMounts:
-      - name: drivers
-        mountPath: /drivers
-
-extraVolumeMounts:
-  - name: drivers
-    mountPath: /var/lib/rancher/kontainer-engine/drivers
-```
-
-!!! note "arm64 nodes"
-    If your Rancher server runs on arm64, use the `kontainer-engine-driver-rackspacespot-arm64` binary instead.
