@@ -25,7 +25,7 @@ permissions:
 jobs:
   validate:
     name: Validate version
-    runs-on: [self-hosted, anchovy]
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.check.outputs.version }}
     steps:
@@ -46,7 +46,7 @@ jobs:
   tag:
     name: Create git tag
     needs: validate
-    runs-on: [self-hosted, anchovy]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
@@ -70,7 +70,7 @@ jobs:
   goreleaser:
     name: Build & publish binaries
     needs: [validate, tag]
-    runs-on: [self-hosted, anchovy]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
@@ -93,7 +93,7 @@ jobs:
   docker:
     name: Build & push container image
     needs: [validate, tag]
-    runs-on: [self-hosted, anchovy]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
@@ -133,7 +133,7 @@ jobs:
   release-docs:
     name: Build UI extension, package chart, update docs
     needs: [validate, tag, goreleaser]
-    runs-on: [self-hosted, anchovy]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
