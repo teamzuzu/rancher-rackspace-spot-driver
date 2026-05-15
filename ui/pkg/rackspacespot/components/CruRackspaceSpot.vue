@@ -104,54 +104,8 @@
       </div>
     </div>
 
-    <!-- ── Server Classes & Pricing ──────────────────────── -->
-    <div class="section-header mt-20">
-      <h3>Spot Node Pools</h3>
-      <button
-        class="btn btn-sm btn-default"
-        type="button"
-        :disabled="!config.rackspaceSpotRefreshToken || priceLoading"
-        @click="loadFromApi"
-      >
-        {{ priceLoading ? 'Loading…' : (serverClasses.length ? 'Refresh from API' : 'Load Regions & Server Classes') }}
-      </button>
-    </div>
-    <div v-if="priceError" class="price-error mt-5">
-      {{ priceError }}
-    </div>
-    <div v-if="serverClasses.length" class="price-table-wrap mt-10">
-      <p class="price-hint">Click a row to use that server class in the pool below.</p>
-      <table class="price-table">
-        <thead>
-          <tr>
-            <th>Server Class</th>
-            <th>Region</th>
-            <th>CPU</th>
-            <th>Memory</th>
-            <th>Market $/hr</th>
-            <th>Min Bid $/hr</th>
-            <th>On-Demand $/hr</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="sc in filteredServerClasses"
-            :key="sc.name"
-            class="sc-row"
-            :class="{ 'sc-row--selected': config.spotServerClass === sc.name }"
-            @click="config.spotServerClass = sc.name"
-          >
-            <td><code>{{ sc.name }}</code></td>
-            <td>{{ sc.region }}</td>
-            <td>{{ sc.cpu }}</td>
-            <td>{{ sc.memory }}</td>
-            <td class="price">{{ sc.marketPrice }}</td>
-            <td class="price">{{ sc.minBidPrice }}</td>
-            <td class="price">{{ sc.onDemandPrice }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- ── Spot Node Pools ───────────────────────────────── -->
+    <h3 class="mt-20">Spot Node Pools</h3>
 
     <!-- ── Primary spot pool ─────────────────────────────── -->
     <div class="pool-card mt-15">
@@ -161,17 +115,9 @@
       <div class="row mt-10">
         <div class="col span-4">
           <LabeledSelect
-            v-if="serverClassOptions.length"
             v-model:value="config.spotServerClass"
             label="Server Class"
             :options="serverClassOptions"
-            :mode="mode"
-          />
-          <LabeledInput
-            v-else
-            v-model:value="config.spotServerClass"
-            label="Server Class"
-            :placeholder="serverClassPlaceholder"
             :mode="mode"
           />
         </div>
@@ -244,17 +190,9 @@
       <div class="row mt-10">
         <div class="col span-4">
           <LabeledSelect
-            v-if="serverClassOptions.length"
             v-model:value="pool.serverClass"
             label="Server Class"
             :options="serverClassOptions"
-            :mode="mode"
-          />
-          <LabeledInput
-            v-else
-            v-model:value="pool.serverClass"
-            label="Server Class"
-            :placeholder="serverClassPlaceholder"
             :mode="mode"
           />
         </div>
@@ -368,10 +306,7 @@ import LabeledInput      from '@components/Form/LabeledInput/LabeledInput';
 import LabeledSelect     from '@shell/components/form/LabeledSelect';
 import Checkbox          from '@components/Form/Checkbox/Checkbox';
 
-const DRIVER   = 'rackspacespot';
-const AUTH_URL = 'https://login.spot.rackspace.com';
-const API_URL  = 'https://spot.rackspace.com';
-const CLIENT_ID = 'mwG3lUMV8KyeMqHe4fJ5Bb3nM1vBvRNa';
+const DRIVER = 'rackspacespot';
 
 const DEFAULTS = {
   driverName:              DRIVER,
@@ -447,19 +382,32 @@ export default defineComponent({
       errors:               [],
       availableRegions:     [],
       knownRegions: [
-        { name: 'aus-syd-1',       description: 'Sydney, Australia' },
-        { name: 'hkg-hkg-1',       description: 'Hong Kong, Hong Kong' },
-        { name: 'uk-lon-1',        description: 'United Kingdom, London' },
+        { name: 'aus-syd-1',        description: 'Sydney, Australia' },
+        { name: 'hkg-hkg-1',        description: 'Hong Kong, Hong Kong' },
+        { name: 'uk-lon-1',         description: 'United Kingdom, London' },
         { name: 'us-central-dfw-1', description: 'US Central, Dallas Fort Worth, TX' },
         { name: 'us-central-dfw-2', description: 'US Central, Dallas Fort Worth, TX' },
         { name: 'us-central-ord-1', description: 'US Central, Chicago, IL' },
-        { name: 'us-east-iad-1',   description: 'US East, Ashburn, VA' },
-        { name: 'us-east-iad-2',   description: 'US East, Ashburn, VA' },
-        { name: 'us-west-sjc-1',   description: 'US West, San Jose, CA' },
+        { name: 'us-east-iad-1',    description: 'US East, Ashburn, VA' },
+        { name: 'us-east-iad-2',    description: 'US East, Ashburn, VA' },
+        { name: 'us-west-sjc-1',    description: 'US West, San Jose, CA' },
       ],
-      serverClasses:        [],
-      priceLoading:         false,
-      priceError:           null,
+      knownServerClasses: [
+        { name: 'ch.vs1.2xlarge-iad', region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '16', memory: '30GB' },
+        { name: 'ch.vs1.large-iad',   region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '4',  memory: '7.5GB' },
+        { name: 'ch.vs1.medium-iad',  region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '2',  memory: '3.75GB' },
+        { name: 'ch.vs1.xlarge-iad',  region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '8',  memory: '15GB' },
+        { name: 'gp.bm2.small-iad',   region: 'us-east-iad-1', category: 'Bare Metal',       cpu: '12', memory: '32GB' },
+        { name: 'gp.vs1.2xlarge-iad', region: 'us-east-iad-1', category: 'General Purpose', cpu: '16', memory: '60GB' },
+        { name: 'gp.vs1.large-iad',   region: 'us-east-iad-1', category: 'General Purpose', cpu: '4',  memory: '15GB' },
+        { name: 'gp.vs1.medium-iad',  region: 'us-east-iad-1', category: 'General Purpose', cpu: '2',  memory: '3.75GB' },
+        { name: 'gp.vs1.xlarge-iad',  region: 'us-east-iad-1', category: 'General Purpose', cpu: '8',  memory: '30GB' },
+        { name: 'io.bm2-iad',         region: 'us-east-iad-1', category: 'Bare Metal',       cpu: '40', memory: '128GB' },
+        { name: 'mh.vs1.2xlarge-iad', region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '16', memory: '120GB' },
+        { name: 'mh.vs1.large-iad',   region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '4',  memory: '30GB' },
+        { name: 'mh.vs1.medium-iad',  region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '2',  memory: '15GB' },
+        { name: 'mh.vs1.xlarge-iad',  region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '8',  memory: '60GB' },
+      ],
       cniOptions:           [
         { label: 'calico', value: 'calico' },
         { label: 'cilium', value: 'cilium' },
@@ -486,11 +434,6 @@ export default defineComponent({
     primaryAutoscalingDisabled() {
       return this.autoscalingPoolCount >= 1 && !this.config.spotAutoscalingEnabled;
     },
-    filteredServerClasses() {
-      const region = this.config.rackspaceSpotRegion;
-      if (!region) return this.serverClasses;
-      return this.serverClasses.filter(sc => sc.region === region);
-    },
     regionOptions() {
       const source = this.availableRegions.length ? this.availableRegions : this.knownRegions;
       return source.map(r => ({
@@ -499,17 +442,15 @@ export default defineComponent({
       }));
     },
     serverClassOptions() {
-      return this.filteredServerClasses.map(sc => ({
-        label: `${sc.name}  (min bid ${sc.minBidPrice} · market ${sc.marketPrice})`,
+      const region = this.config.rackspaceSpotRegion;
+      const filtered = region
+        ? this.knownServerClasses.filter(sc => sc.region === region)
+        : this.knownServerClasses;
+      const source = filtered.length ? filtered : this.knownServerClasses;
+      return source.map(sc => ({
+        label: `${sc.name} — ${sc.category}, ${sc.cpu} CPU, ${sc.memory}`,
         value: sc.name,
       }));
-    },
-    serverClassPlaceholder() {
-      if (this.serverClasses.length) {
-        const first = this.filteredServerClasses[0];
-        return first ? first.name : 'e.g. gp.vs1.medium-iad';
-      }
-      return 'e.g. gp.vs1.medium-iad';
     },
   },
 
@@ -520,86 +461,6 @@ export default defineComponent({
 
     removeSpotPool(idx) {
       this.additionalSpotPools.splice(idx, 1);
-    },
-
-    async loadFromApi() {
-      if (!this.config.rackspaceSpotRefreshToken) return;
-      this.priceLoading = true;
-      this.priceError   = null;
-      try {
-        // Step 1: exchange refresh token for id_token
-        let token;
-        try {
-          const authResp = await fetch(`${AUTH_URL}/oauth/token`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body:    new URLSearchParams({
-              grant_type:    'refresh_token',
-              client_id:     CLIENT_ID,
-              refresh_token: this.config.rackspaceSpotRefreshToken,
-            }),
-          });
-          if (!authResp.ok) {
-            const body = await authResp.text().catch(() => '');
-            throw new Error(`Authentication failed (HTTP ${authResp.status})${body ? ': ' + body : ''}`);
-          }
-          const authData = await authResp.json();
-          token = authData.id_token;
-          if (!token) throw new Error('No id_token in authentication response — check your refresh token');
-        } catch (e) {
-          if (e.message === 'Failed to fetch' || e.message?.includes('NetworkError')) {
-            throw new Error(`Authentication request blocked — ${AUTH_URL} does not allow browser requests from this origin (CORS). This needs a server-side proxy.`);
-          }
-          throw e;
-        }
-
-        const headers = { Authorization: `Bearer ${token}` };
-
-        // Step 2: fetch regions and server classes in parallel
-        const [regionsResp, scResp] = await Promise.all([
-          fetch(`${API_URL}/apis/ngpc.rxt.io/v1/regions`, { headers }),
-          fetch(`${API_URL}/apis/ngpc.rxt.io/v1/serverclasses`, { headers }),
-        ]);
-
-        if (regionsResp.ok) {
-          const regData = await regionsResp.json();
-          this.availableRegions = (regData.items || []).map(i => ({
-            name:        i.metadata?.name || '',
-            description: i.spec?.description || '',
-          })).sort((a, b) => a.name.localeCompare(b.name));
-          // auto-select region if only one available and none set
-          if (this.availableRegions.length === 1 && !this.config.rackspaceSpotRegion) {
-            this.config.rackspaceSpotRegion = this.availableRegions[0].name;
-          }
-        }
-
-        if (!scResp.ok) {
-          throw new Error(`Server class fetch failed (HTTP ${scResp.status})`);
-        }
-        const scData = await scResp.json();
-        this.serverClasses = (scData.items || [])
-          .filter(i => i.spec?.availability === 'available')
-          .map(i => ({
-            name:          i.metadata?.name || '',
-            region:        i.spec?.region || '',
-            cpu:           i.spec?.resources?.cpu || '',
-            memory:        i.spec?.resources?.memory || '',
-            marketPrice:   i.status?.spotPricing?.marketPricePerHour
-              ? `$${i.status.spotPricing.marketPricePerHour}`
-              : 'N/A',
-            minBidPrice:   i.spec?.minBidPricePerHour
-              ? `$${i.spec.minBidPricePerHour}`
-              : 'N/A',
-            onDemandPrice: i.spec?.onDemandPricing?.cost
-              ? `$${i.spec.onDemandPricing.cost}`
-              : 'N/A',
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name));
-      } catch (e) {
-        this.priceError = e.message;
-      } finally {
-        this.priceLoading = false;
-      }
     },
 
     async save(btnCb) {
@@ -670,14 +531,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.section-header h3 {
-  margin: 0;
-}
 .pool-card {
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -694,50 +547,6 @@ export default defineComponent({
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--default-text);
-}
-.price-table-wrap {
-  overflow-x: auto;
-}
-.price-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85em;
-}
-.price-table th,
-.price-table td {
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  text-align: left;
-  white-space: nowrap;
-}
-.price-table th {
-  background: var(--accent-btn);
-  font-weight: 600;
-}
-.price-table .price {
-  font-family: monospace;
-}
-.price-hint {
-  font-size: 0.8em;
-  color: var(--muted);
-  margin: 0 0 4px;
-}
-.sc-row {
-  cursor: pointer;
-}
-.sc-row:hover {
-  background: var(--accent-btn);
-}
-.sc-row--selected {
-  background: var(--primary) !important;
-  color: var(--primary-text);
-}
-.sc-row--selected code {
-  color: var(--primary-text);
-}
-.price-error {
-  color: var(--error);
-  font-size: 0.85em;
 }
 .mt-5  { margin-top: 5px; }
 .mt-10 { margin-top: 10px; }
