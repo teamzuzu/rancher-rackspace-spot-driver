@@ -38,7 +38,7 @@ const (
 
 	defaultK8sVersion = "1.33.0"
 	defaultCNI        = "calico"
-	defaultSpotClass  = "rxtx.4xlarge-mi300x"
+	defaultSpotClass  = "gh.vs1.medium-iad"
 	defaultSpotCount  = int64(3)
 	defaultSpotBid    = "0.01"
 

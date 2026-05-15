@@ -65,7 +65,7 @@
           v-else
           v-model:value="config.rackspaceSpotRegion"
           label="Region"
-          placeholder="e.g. colo-lax-1"
+          placeholder="e.g. us-east-iad-1"
           :required="true"
           :mode="mode"
         />
@@ -388,7 +388,7 @@ const DEFAULTS = {
   kubernetesVersion:       '1.33.0',
   cni:                     'calico',
   gpuEnabled:              false,
-  spotServerClass:         'rxtx.4xlarge-mi300x',
+  spotServerClass:         'gh.vs1.medium-iad',
   spotNodeCount:           3,
   spotBidPrice:            '0.01',
   spotAutoscalingEnabled:  false,
@@ -504,9 +504,9 @@ export default defineComponent({
     serverClassPlaceholder() {
       if (this.serverClasses.length) {
         const first = this.filteredServerClasses[0];
-        return first ? first.name : 'e.g. rxtx.4xlarge-mi300x';
+        return first ? first.name : 'e.g. gh.vs1.medium-iad';
       }
-      return 'e.g. rxtx.4xlarge-mi300x';
+      return 'e.g. gh.vs1.medium-iad';
     },
   },
 
