@@ -170,9 +170,9 @@ jobs:
           VER="${VERSION#v}"
           PLUGIN_DIR="docs/extensions/rackspacespot/${VER}/plugin"
           mkdir -p "${PLUGIN_DIR}"
-          cp -r ui/dist-pkg/rackspacespot-${VER}/. "${PLUGIN_DIR}/"
+          cp -r "ui/dist-pkg/rackspacespot-${VER}/." "${PLUGIN_DIR}/"
           # Generate files.txt listing all files under the versioned dir
-          (cd "docs/extensions/rackspacespot/${VER}" && find * -type f | sort) \
+          (cd "docs/extensions/rackspacespot/${VER}" && find . -type f | sed 's|^\./||' | sort) \
             > "docs/extensions/rackspacespot/${VER}/files.txt"
 
       - name: Install Helm
