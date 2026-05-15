@@ -6,4 +6,12 @@ export default function(plugin: IPlugin): void {
   plugin.metadata = require('./package.json');
 
   plugin.register('provisioner', RackspaceSpotProvisioner.ID, RackspaceSpotProvisioner);
+
+  plugin.addL10n('en-us', () => ({
+    cluster: {
+      providerGroup: {
+        'create-kontainer': 'Provision a new cluster in Rackspace Spot',
+      },
+    },
+  }));
 }
