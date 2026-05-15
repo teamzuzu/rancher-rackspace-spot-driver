@@ -3,6 +3,9 @@ name: Auto-release
 # Triggers only when releasable source files change.
 # Commits containing [skip ci] (e.g. the release bot's own commits) are
 # automatically ignored by GitHub Actions, so there is no release loop.
+#
+# NOTE: pushing a tag via GITHUB_TOKEN cannot trigger another workflow (GitHub
+# security restriction), so we dispatch release.yml directly instead.
 on:
   push:
     branches:
@@ -16,23 +19,19 @@ on:
       - 'ui/pkg/**'
 
 permissions:
-  contents: write  # create and push tags
+  contents: read   # read tags
+  actions: write   # dispatch release workflow
 
 jobs:
-  bump-and-tag:
-    name: Bump patch version and tag
+  bump-and-dispatch:
+    name: Bump patch version and dispatch release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Configure git identity
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Compute next patch version and push tag
+      - name: Compute next patch version and dispatch release
         run: |
           LATEST=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -1)
           [ -z "$LATEST" ] && LATEST="v0.0.0"
@@ -41,5 +40,6 @@ jobs:
           MINOR="${REST%%.*}"; PATCH="${REST#*.}"
           NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))"
           echo "Latest: $LATEST  →  Next: $NEXT"
-          git tag -a "$NEXT" -m "Release $NEXT"
-          git push origin "$NEXT"
+          gh workflow run release.yml --field version="$NEXT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
