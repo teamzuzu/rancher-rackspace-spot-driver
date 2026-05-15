@@ -1,12 +1,19 @@
 name: Auto-release
 
-# Runs on every push to main that isn't a bot commit.
+# Triggers only when releasable source files change.
 # Commits containing [skip ci] (e.g. the release bot's own commits) are
 # automatically ignored by GitHub Actions, so there is no release loop.
 on:
   push:
     branches:
       - main
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Dockerfile'
+      - 'deploy/charts/**'
+      - 'ui/pkg/**'
 
 permissions:
   contents: write  # create and push tags
