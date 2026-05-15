@@ -504,12 +504,14 @@ export default defineComponent({
             id:   mgmtId,
             opt:  { force: true },
           });
+          existing.annotations = { ...(existing.annotations || {}), 'ui.rancher/provider': 'rackspacespot' };
           existing.rackspacespotEngineConfig = cfg;
           await existing.save();
         } else {
           const cluster = await this.$store.dispatch('rancher/create', {
             type:                      'cluster',
             name:                      this.clusterName,
+            annotations:               { 'ui.rancher/provider': 'rackspacespot' },
             rackspacespotEngineConfig: cfg,
           });
           await cluster.save();
