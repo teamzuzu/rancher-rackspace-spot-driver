@@ -270,9 +270,10 @@
     <template v-if="config.onDemandEnabled">
       <div class="row mt-10">
         <div class="col span-4">
-          <LabeledInput
+          <LabeledSelect
             v-model:value="config.onDemandServerClass"
             label="Server Class"
+            :options="serverClassOptions"
             :mode="mode"
           />
         </div>
@@ -321,6 +322,7 @@ const DEFAULTS = {
   spotAutoscalingMinNodes: 1,
   spotAutoscalingMaxNodes: 10,
   onDemandEnabled:         false,
+  onDemandServerClass:     'gp.vs1.medium-iad',
   onDemandNodeCount:       1,
 };
 
@@ -477,6 +479,11 @@ export default defineComponent({
       }
       if (!this.config.rackspaceSpotOrganization) {
         this.errors = ['Organization is required'];
+        if (btnCb) btnCb(false);
+        return;
+      }
+      if (this.config.onDemandEnabled && !this.config.onDemandServerClass) {
+        this.errors = ['On-Demand Server Class is required when the on-demand pool is enabled'];
         if (btnCb) btnCb(false);
         return;
       }
