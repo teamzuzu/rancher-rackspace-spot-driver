@@ -38,7 +38,7 @@ const (
 
 	defaultK8sVersion = "1.33.0"
 	defaultCNI        = "calico"
-	defaultSpotClass  = "gh.vs1.medium-iad"
+	defaultSpotClass  = "gp.vs1.medium-iad"
 	defaultSpotCount  = int64(3)
 	defaultSpotBid    = "0.01"
 

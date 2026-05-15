@@ -91,7 +91,7 @@ func TestReconcileDeleteBeforeAutoscalingEnable(t *testing.T) {
 	state := &clusterState{
 		CloudspaceName:  "cs",
 		SpotPoolName:    "pool-b",
-		SpotServerClass: "gh.vs1.medium-iad",
+		SpotServerClass: "gp.vs1.medium-iad",
 		SpotNodeCount:   3,
 		SpotBidPrice:    "0.01",
 		SpotAutoscaling: true,
@@ -135,14 +135,14 @@ func TestReconcileAutoscalingSwapDisableBeforeEnable(t *testing.T) {
 	state := &clusterState{
 		CloudspaceName:  "cs",
 		SpotPoolName:    "pool-a",
-		SpotServerClass: "gh.vs1.medium-iad",
+		SpotServerClass: "gp.vs1.medium-iad",
 		SpotNodeCount:   3,
 		SpotBidPrice:    "0.01",
 		SpotAutoscaling: false, // pool-a: autoscaling off
 		AdditionalSpotPools: []SpotPoolConfig{
 			{
 				Name:        "pool-b",
-				ServerClass: "gh.vs1.medium-iad",
+				ServerClass: "gp.vs1.medium-iad",
 				NodeCount:   2,
 				BidPrice:    "0.01",
 				Autoscaling: true, // pool-b: autoscaling on

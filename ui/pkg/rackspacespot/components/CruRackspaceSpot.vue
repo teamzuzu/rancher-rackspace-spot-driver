@@ -379,7 +379,7 @@ const DEFAULTS = {
   kubernetesVersion:       '1.33.0',
   cni:                     'calico',
   gpuEnabled:              false,
-  spotServerClass:         'gh.vs1.medium-iad',
+  spotServerClass:         'gp.vs1.medium-iad',
   spotNodeCount:           3,
   spotBidPrice:            '0.01',
   spotAutoscalingEnabled:  false,
@@ -447,8 +447,15 @@ export default defineComponent({
       errors:               [],
       availableRegions:     [],
       knownRegions: [
-        { name: 'us-east-iad-1', description: 'US East (Dulles, VA)' },
-        { name: 'us-west-sjc-1', description: 'US West (San Jose, CA)' },
+        { name: 'aus-syd-1',       description: 'Sydney, Australia' },
+        { name: 'hkg-hkg-1',       description: 'Hong Kong, Hong Kong' },
+        { name: 'uk-lon-1',        description: 'United Kingdom, London' },
+        { name: 'us-central-dfw-1', description: 'US Central, Dallas Fort Worth, TX' },
+        { name: 'us-central-dfw-2', description: 'US Central, Dallas Fort Worth, TX' },
+        { name: 'us-central-ord-1', description: 'US Central, Chicago, IL' },
+        { name: 'us-east-iad-1',   description: 'US East, Ashburn, VA' },
+        { name: 'us-east-iad-2',   description: 'US East, Ashburn, VA' },
+        { name: 'us-west-sjc-1',   description: 'US West, San Jose, CA' },
       ],
       serverClasses:        [],
       priceLoading:         false,
@@ -500,9 +507,9 @@ export default defineComponent({
     serverClassPlaceholder() {
       if (this.serverClasses.length) {
         const first = this.filteredServerClasses[0];
-        return first ? first.name : 'e.g. gh.vs1.medium-iad';
+        return first ? first.name : 'e.g. gp.vs1.medium-iad';
       }
-      return 'e.g. gh.vs1.medium-iad';
+      return 'e.g. gp.vs1.medium-iad';
     },
   },
 

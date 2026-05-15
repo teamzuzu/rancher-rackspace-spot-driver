@@ -33,7 +33,7 @@ The spot node pool is always created. It is the primary source of compute for th
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `spotPoolName` | string | *(auto-generated UUID)* | Name for the spot node pool. Must be unique within the CloudSpace. Auto-generated if not provided. |
-| `spotServerClass` | string | `gh.vs1.medium-iad` | [Server class](https://spot.rackspace.com) for spot nodes (CPU/RAM/GPU tier). |
+| `spotServerClass` | string | `gp.vs1.medium-iad` | [Server class](https://spot.rackspace.com) for spot nodes (CPU/RAM/GPU tier). |
 | `spotNodeCount` | int | `3` | Desired number of spot nodes. Ignored when autoscaling is enabled. |
 | `spotBidPrice` | string | `0.01` | Maximum price per node-hour in USD. Nodes are only provisioned when the market price is at or below this value. |
 | `spotAutoscaling` | bool | `false` | Enable autoscaling for the spot pool. When enabled, `spotNodeCount` is overridden by the autoscaler. |
@@ -71,7 +71,7 @@ You can define additional spot node pools beyond the primary one by providing a 
 [
   {
     "name":        "",
-    "serverClass": "gh.vs1.medium-iad",
+    "serverClass": "gp.vs1.medium-iad",
     "nodeCount":   2,
     "bidPrice":    "0.01",
     "autoscaling": false,
@@ -129,7 +129,7 @@ region:              <your-region>
 k8sVersion:          1.33.0
 cni:                 calico
 
-spotServerClass:     gh.vs1.medium-iad
+spotServerClass:     gp.vs1.medium-iad
 spotBidPrice:        0.01
 spotAutoscaling:     true
 spotMinNodes:        2
@@ -142,6 +142,6 @@ onDemandCount:       2
 
 This configuration creates a cluster with:
 
-- A spot pool that autoscales between 2 and 20 `gh.vs1.medium-iad` nodes, capped at $0.01/hr per node
+- A spot pool that autoscales between 2 and 20 `gp.vs1.medium-iad` nodes, capped at $0.01/hr per node
 - A fixed on-demand pool of 2 `rxtx.2xlarge` nodes for guaranteed capacity
 - Pool names are auto-generated UUIDs

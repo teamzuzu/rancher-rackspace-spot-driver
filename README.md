@@ -138,7 +138,7 @@ A spot pool is always created. Spot nodes are preemptible and billed at your bid
 | Option | Required | Default | Description |
 |---|---|---|---|
 | `spot-node-pool-name` | | *(auto-generated UUID)* | Name for the spot node pool |
-| `spot-server-class` | | `gh.vs1.medium-iad` | Hardware class for spot nodes |
+| `spot-server-class` | | `gp.vs1.medium-iad` | Hardware class for spot nodes |
 | `spot-node-count` | | `3` | Desired number of spot nodes |
 | `spot-bid-price` | | `0.01` | Maximum price per node-hour (USD) |
 | `spot-autoscaling-enabled` | | `false` | Enable autoscaling for the spot pool |
