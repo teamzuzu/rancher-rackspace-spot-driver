@@ -9,7 +9,6 @@ This guide covers building, testing, and releasing the driver locally.
 | Tool | Version | Notes |
 |---|---|---|
 | Go | ≥ 1.24 | `go.mod` specifies the minimum |
-| Docker (optional) | Any | For building the container image |
 | golangci-lint (optional) | Latest | Or rely on the CI lint job |
 
 ---
@@ -157,7 +156,6 @@ The workflow will:
 - Validate the version format
 - Create and push a signed git tag
 - Run GoReleaser to build linux/amd64 and linux/arm64 binaries and publish a GitHub Release
-- Build and push a multi-arch container image to `ghcr.io/teamzuzu/rancher-rackspace-spot-driver` (the image contains the `kontainer-engine-driver-rackspacespot` binary)
 
 !!! note "Permissions"
     Only repository maintainers with **write** access can trigger the release workflow.
