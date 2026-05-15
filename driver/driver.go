@@ -174,9 +174,17 @@ func (d *Driver) GetDriverUpdateOptions(ctx context.Context) (*types.DriverFlags
 				Type:  types.BoolType,
 				Usage: "Enable or disable the on-demand node pool",
 			},
+			flagOnDemandClass: {
+				Type:  types.StringType,
+				Usage: "Server class for on-demand nodes",
+			},
 			flagOnDemandCount: {
 				Type:  types.IntType,
 				Usage: "Desired number of on-demand nodes",
+			},
+			flagOnDemandPrice: {
+				Type:  types.StringType,
+				Usage: "Maximum price per node-hour for on-demand nodes",
 			},
 			flagAdditionalSpotPools: {
 				Type:  types.StringType,

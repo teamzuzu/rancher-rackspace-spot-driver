@@ -180,6 +180,9 @@ func applyDefaults(s *clusterState) {
 	if s.OnDemandEnabled && (s.OnDemandPoolName == "" || uuid.Validate(s.OnDemandPoolName) != nil) {
 		s.OnDemandPoolName = uuid.New().String()
 	}
+	if s.OnDemandEnabled && s.OnDemandClass == "" {
+		s.OnDemandClass = defaultSpotClass
+	}
 
 	for i := range s.AdditionalSpotPools {
 		p := &s.AdditionalSpotPools[i]
@@ -284,8 +287,14 @@ func mergeState(existing *clusterState, opts *types.DriverOptions) {
 	if v, ok := lookupBoolOption(opts, flagOnDemandEnabled, "onDemandEnabled"); ok {
 		existing.OnDemandEnabled = v
 	}
+	if v := getStringOption(opts, flagOnDemandClass, "onDemandServerClass"); v != "" {
+		existing.OnDemandClass = v
+	}
 	if n, ok := lookupIntOption(opts, flagOnDemandCount, "onDemandNodeCount"); ok {
 		existing.OnDemandCount = int(n)
+	}
+	if v := getStringOption(opts, flagOnDemandPrice, "onDemandPricePerHour"); v != "" {
+		existing.OnDemandPrice = v
 	}
 
 	if raw := getStringOption(opts, flagAdditionalSpotPools, "additionalSpotPools"); raw != "" {
