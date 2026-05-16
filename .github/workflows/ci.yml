@@ -12,14 +12,11 @@ on:
 permissions:
   contents: read
 
-env:
-  CI_IMAGE: ghcr.io/${{ github.repository }}-ci:latest
-
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    container: ${{ env.CI_IMAGE }}
+    container: ghcr.io/${{ github.repository }}-ci:latest
     steps:
       - uses: actions/checkout@v6
 
@@ -35,7 +32,7 @@ jobs:
   tidy:
     name: go mod tidy
     runs-on: ubuntu-latest
-    container: ${{ env.CI_IMAGE }}
+    container: ghcr.io/${{ github.repository }}-ci:latest
     steps:
       - uses: actions/checkout@v6
 
@@ -52,7 +49,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    container: ${{ env.CI_IMAGE }}
+    container: ghcr.io/${{ github.repository }}-ci:latest
     strategy:
       matrix:
         goarch: [amd64, arm64]
@@ -72,7 +69,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    container: ${{ env.CI_IMAGE }}
+    container: ghcr.io/${{ github.repository }}-ci:latest
     steps:
       - uses: actions/checkout@v6
 
@@ -85,7 +82,7 @@ jobs:
   vet:
     name: go vet
     runs-on: ubuntu-latest
-    container: ${{ env.CI_IMAGE }}
+    container: ghcr.io/${{ github.repository }}-ci:latest
     steps:
       - uses: actions/checkout@v6
 
