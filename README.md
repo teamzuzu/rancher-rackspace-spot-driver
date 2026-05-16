@@ -8,14 +8,20 @@ A [rancher kontainer-engine](https://github.com/rancher/kontainer-engine) cluste
 
 This driver lets you create, scale, and delete Rackspace Spot **CloudSpaces** (managed Kubernetes clusters) directly from the Rancher UI or API, alongside your other cluster providers. It supports:
 
-- Spot node pools with configurable bid prices and autoscaling
-- Optional on-demand node pools for stable baseline capacity
-- GPU-enabled CloudSpaces
-- Preemption webhook integration
-- Kubernetes version management
+### Features
+
+- Create and destroy Rackspace clusters in different regions [ regions untested ]
+- Spot node pools with configurable bid prices and autoscaling [ tested ] 
+- Optional on-demand node pools for stable baseline capacity [ tested ] 
+- GPU-enabled CloudSpaces - [ tested ] 
+- Preemption webhook integration - [ untested ] 
+- Kubernetes version management - [ upgrades / downgrades untested ]
+
+### Unsupported
+
+- HA Mode
 
 
-[![CI](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/ci.yml) [![Release](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/release.yml) [![Deploy Docs](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/teamzuzu/rancher-rackspace-spot-driver/actions/workflows/pages.yml)
 ---
 
 ## Prerequisites
