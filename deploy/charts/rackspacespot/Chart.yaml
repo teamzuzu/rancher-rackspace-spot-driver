@@ -1,7 +1,7 @@
 apiVersion: v2
 type: application
-version: "0.0.0-devel"
-appVersion: "0.0.0-devel"
+version: "0.0.33"
+appVersion: "v0.0.33"
 name: rackspacespot
 description: Rancher cluster driver and UI extension for Rackspace Spot.
 home: https://github.com/teamzuzu/rancher-rackspace-spot-driver
