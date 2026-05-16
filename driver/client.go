@@ -113,6 +113,8 @@ func (c *spotClient) createCloudspaceHA(ctx context.Context, s *clusterState) er
 	if err != nil {
 		return fmt.Errorf("failed to marshal HA cloudspace request: %w", err)
 	}
+	logrus.Infof("[rackspacespot] HA cloudspace request body: %s", string(jsonBody))
+
 	url := fmt.Sprintf("%s/apis/ngpc.rxt.io/v1/namespaces/%s/cloudspaces", c.rawSDK.BaseURL, orgID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonBody))
 	if err != nil {
@@ -125,9 +127,10 @@ func (c *spotClient) createCloudspaceHA(ctx context.Context, s *clusterState) er
 		return fmt.Errorf("HA cloudspace create request failed: %w", err)
 	}
 	defer resp.Body.Close()
+	respBody, _ := io.ReadAll(resp.Body)
+	logrus.Infof("[rackspacespot] HA cloudspace response status=%d body=%s", resp.StatusCode, strings.TrimSpace(string(respBody)))
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("HA cloudspace create returned status %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+		return fmt.Errorf("HA cloudspace create failed (HTTP %d): %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
 	}
 	return nil
 }
@@ -155,10 +158,12 @@ func (c *spotClient) ensureCloudspace(ctx context.Context, s *clusterState) (*sp
 	}
 
 	if s.HAEnabled {
+		logrus.Infof("[rackspacespot] creating cloudspace %s with HA control plane", s.CloudspaceName)
 		if err := c.createCloudspaceHA(ctx, s); err != nil {
 			return nil, fmt.Errorf("failed to create HA cloudspace: %w", err)
 		}
 	} else {
+		logrus.Infof("[rackspacespot] creating cloudspace %s (non-HA)", s.CloudspaceName)
 		if err := c.api.CreateCloudspace(ctx, cs); err != nil {
 			return nil, fmt.Errorf("failed to create cloudspace: %w", err)
 		}
