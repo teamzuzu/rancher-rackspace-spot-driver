@@ -106,6 +106,7 @@
 
     <!-- ── Spot Node Pools ───────────────────────────────── -->
     <h3 class="mt-20">Spot Node Pools</h3>
+    <a href="https://tombojer.github.io/spot-cost-analyzer/" target="_blank" rel="noopener" class="spot-cost-link">Estimate costs with the Spot Cost Analyzer ↗</a>
 
     <!-- ── Primary spot pool ─────────────────────────────── -->
     <div class="pool-card mt-15">
@@ -561,4 +562,6 @@ export default defineComponent({
 .mt-15 { margin-top: 15px; }
 .mt-20 { margin-top: 20px; }
 .mb-20 { margin-bottom: 20px; }
+.spot-cost-link { font-size: 0.85em; color: var(--primary); text-decoration: none; }
+.spot-cost-link:hover { text-decoration: underline; }
 </style>
