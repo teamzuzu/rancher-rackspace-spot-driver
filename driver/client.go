@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -61,32 +62,53 @@ func newSpotClient(ctx context.Context, refreshToken, org string) (*spotClient, 
 	return &spotClient{api: c, rawSDK: c, org: org}, nil
 }
 
-// createCloudspaceHA creates a CloudSpace with HAControlPlane=true by making the
-// API request directly, since the SDK's CreateCloudspace hardcodes HAControlPlane to false.
+// haCloudspaceBody is the request body for creating an HA CloudSpace directly.
+// We cannot reuse spotv1.CloudSpaceSpec because the SDK has a bug: it tags
+// HAControlPlane as json:"HAControlPlane" (uppercase), which the Rackspace API
+// rejects with a 422 "invalid value HA" error. The correct camelCase key is
+// "haControlPlane".
+type haCloudspaceBody struct {
+	APIVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
+	Metadata   struct {
+		Name        string            `json:"name"`
+		Namespace   string            `json:"namespace"`
+		Annotations map[string]string `json:"annotations"`
+	} `json:"metadata"`
+	Spec struct {
+		DeploymentType    string `json:"deploymentType"`
+		Cloud             string `json:"cloud"`
+		Region            string `json:"region"`
+		Webhook           string `json:"webhook,omitempty"`
+		CNI               string `json:"cni"`
+		KubernetesVersion string `json:"kubernetesVersion"`
+		HAControlPlane    bool   `json:"haControlPlane"`
+		GpuEnabled        bool   `json:"gpuEnabled"`
+	} `json:"spec"`
+}
+
+// createCloudspaceHA creates a CloudSpace with haControlPlane=true by making the
+// API request directly, since the SDK's CreateCloudspace hardcodes it to false.
 func (c *spotClient) createCloudspaceHA(ctx context.Context, s *clusterState) error {
 	_, orgID, err := c.rawSDK.GetOrgID(ctx, c.org)
 	if err != nil {
 		return fmt.Errorf("failed to resolve org ID: %w", err)
 	}
-	body := spotv1.CloudSpaceCreateRequestBody{
-		APIVersion: "ngpc.rxt.io/v1",
-		Kind:       "CloudSpace",
-		Metadata: spotv1.ObjectMetaWithAnnotations{
-			Name:        s.CloudspaceName,
-			Namespace:   orgID,
-			Annotations: map[string]string{},
-		},
-		Spec: spotv1.CloudSpaceSpec{
-			DeploymentType:    "gen2",
-			Cloud:             "default",
-			Region:            s.Region,
-			Webhook:           s.PreemptionWebhook,
-			CNI:               s.CNI,
-			KubernetesVersion: s.KubernetesVersion,
-			HAControlPlane:    true,
-			GpuEnabled:        s.GPUEnabled,
-		},
-	}
+	var body haCloudspaceBody
+	body.APIVersion = "ngpc.rxt.io/v1"
+	body.Kind = "CloudSpace"
+	body.Metadata.Name = s.CloudspaceName
+	body.Metadata.Namespace = orgID
+	body.Metadata.Annotations = map[string]string{}
+	body.Spec.DeploymentType = "gen2"
+	body.Spec.Cloud = "default"
+	body.Spec.Region = s.Region
+	body.Spec.Webhook = s.PreemptionWebhook
+	body.Spec.CNI = s.CNI
+	body.Spec.KubernetesVersion = s.KubernetesVersion
+	body.Spec.HAControlPlane = true
+	body.Spec.GpuEnabled = s.GPUEnabled
+
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("failed to marshal HA cloudspace request: %w", err)
@@ -104,7 +126,8 @@ func (c *spotClient) createCloudspaceHA(ctx context.Context, s *clusterState) er
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("HA cloudspace create returned status %d", resp.StatusCode)
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("HA cloudspace create returned status %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
 	}
 	return nil
 }
