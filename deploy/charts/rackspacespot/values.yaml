@@ -3,6 +3,3 @@ kontainerDriver:
   checksum: ""
 uiPlugin:
   endpoint: ""
-apiServer:
-  image: "ghcr.io/teamzuzu/rancher-rackspace-spot-driver:latest"
-  port: 8080
