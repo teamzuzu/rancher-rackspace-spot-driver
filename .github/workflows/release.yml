@@ -160,11 +160,13 @@ jobs:
           CHECKSUM="${{ steps.checksum.outputs.amd64 }}"
           ENDPOINT="${PAGES_URL}/extensions/rackspacespot/${VER}"
 
-          # Stamp release-specific values into the chart before packaging (not committed to git).
+          # Stamp release-specific values into chart files before packaging.
           # Patterns match any existing value so re-running a release never silently no-ops.
           sed -i "s|^\(  url:\) \"[^\"]*\"$|\1 \"${BINARY_URL}\"|" deploy/charts/rackspacespot/values.yaml
           sed -i "s|^\(  checksum:\) \"[^\"]*\"$|\1 \"${CHECKSUM}\"|" deploy/charts/rackspacespot/values.yaml
           sed -i "s|^\(  endpoint:\) \"[^\"]*\"$|\1 \"${ENDPOINT}\"|" deploy/charts/rackspacespot/values.yaml
+          sed -i "s|^version:.*|version: \"${VER}\"|" deploy/charts/rackspacespot/Chart.yaml
+          sed -i "s|^appVersion:.*|appVersion: \"${VERSION}\"|" deploy/charts/rackspacespot/Chart.yaml
 
           mkdir -p release_artifacts
           helm package deploy/charts/rackspacespot \
@@ -207,7 +209,10 @@ jobs:
       - name: Commit and push changes
         run: |
           VERSION="${{ needs.validate.outputs.version }}"
-          git add docs/extensions/ docs/index.yaml README.md
+          git add docs/extensions/ docs/index.yaml README.md \
+                deploy/charts/rackspacespot/Chart.yaml \
+                deploy/charts/rackspacespot/values.yaml \
+                ui/pkg/rackspacespot/package.json
           if git diff --cached --quiet; then
             echo "Nothing to commit"
           else
