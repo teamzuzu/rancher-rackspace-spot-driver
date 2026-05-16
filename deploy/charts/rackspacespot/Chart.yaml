@@ -4,10 +4,12 @@ version: "0.0.33"
 appVersion: "v0.0.33"
 name: rackspacespot
 description: Rancher cluster driver and UI extension for Rackspace Spot.
+icon: https://teamzuzu.github.io/rancher-rackspace-spot-driver/rackspace-spot-icon.svg
 home: https://github.com/teamzuzu/rancher-rackspace-spot-driver
 sources:
   - https://github.com/teamzuzu/rancher-rackspace-spot-driver
 annotations:
+  catalog.cattle.io/icon: https://teamzuzu.github.io/rancher-rackspace-spot-driver/rackspace-spot-icon.svg
   catalog.cattle.io/display-name: Rackspace Spot
   catalog.cattle.io/namespace: cattle-ui-plugin-system
   catalog.cattle.io/release-name: rackspacespot
