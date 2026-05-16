@@ -43,9 +43,10 @@ RUN ARCH=$(dpkg --print-architecture) && \
     curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${ARCH}.tar.gz" \
     | tar -xz --strip-components=1 -C /usr/local/bin "linux-${ARCH}/helm"
 
-# GoReleaser
+# GoReleaser (asset uses x86_64 for amd64)
 RUN ARCH=$(dpkg --print-architecture) && \
-    curl -fsSL "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_Linux_${ARCH}.tar.gz" \
+    GR_ARCH=$([ "$ARCH" = "amd64" ] && echo "x86_64" || echo "$ARCH") && \
+    curl -fsSL "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_Linux_${GR_ARCH}.tar.gz" \
     | tar -xz -C /usr/local/bin goreleaser
 
 # golangci-lint
