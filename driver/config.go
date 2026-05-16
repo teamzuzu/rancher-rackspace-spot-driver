@@ -35,7 +35,6 @@ const (
 	flagOnDemandCount       = "on-demand-node-count"
 	flagOnDemandPrice       = "on-demand-price-per-hour"
 	flagAdditionalSpotPools = "additional-spot-pools"
-	flagHAEnabled           = "ha-control-plane"
 
 	defaultK8sVersion = "1.33.0"
 	defaultCNI        = "calico"
@@ -73,7 +72,6 @@ type clusterState struct {
 	KubernetesVersion string `json:"kubernetesVersion"`
 	CNI               string `json:"cni"`
 	GPUEnabled        bool   `json:"gpuEnabled"`
-	HAEnabled         bool   `json:"haEnabled,omitempty"`
 	PreemptionWebhook string `json:"preemptionWebhookURL,omitempty"`
 	DeploymentType    string `json:"deploymentType,omitempty"`
 
@@ -107,7 +105,6 @@ func stateFromOptions(opts *types.DriverOptions) (*clusterState, error) {
 		KubernetesVersion: getStringOption(opts, flagK8sVersion, "kubernetesVersion"),
 		CNI:               getStringOption(opts, flagCNI, "cni"),
 		GPUEnabled:        getBoolOption(opts, flagGPUEnabled, "gpuEnabled"),
-		HAEnabled:         getBoolOption(opts, flagHAEnabled, "haEnabled"),
 		PreemptionWebhook: getStringOption(opts, flagPreemptionWebhook, "preemptionWebhookUrl"),
 		DeploymentType:    getStringOption(opts, flagDeploymentType, "deploymentType"),
 		SpotPoolName:      getStringOption(opts, flagSpotPoolName, "spotNodePoolName"),
