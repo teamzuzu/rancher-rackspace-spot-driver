@@ -7,6 +7,7 @@ name: Auto-release
 # NOTE: pushing a tag via GITHUB_TOKEN cannot trigger another workflow (GitHub
 # security restriction), so we dispatch release.yml directly instead.
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
