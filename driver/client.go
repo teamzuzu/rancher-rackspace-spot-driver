@@ -1,12 +1,8 @@
 package driver
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 	"time"
 
@@ -62,82 +58,6 @@ func newSpotClient(ctx context.Context, refreshToken, org string) (*spotClient, 
 	return &spotClient{api: c, rawSDK: c, org: org}, nil
 }
 
-// haCloudspaceBody is the request body for creating an HA CloudSpace directly.
-// The SDK's CreateCloudspace hardcodes HAControlPlane:false and omits the
-// "type":"hosted" field that the Rackspace Spot API requires for HA clusters.
-// Inspecting a real HA CloudSpace (created via the native Spot GUI) confirmed
-// the exact spec: HAControlPlane (uppercase), type:"hosted", webhook:"" present.
-type haCloudspaceBody struct {
-	APIVersion string `json:"apiVersion"`
-	Kind       string `json:"kind"`
-	Metadata   struct {
-		Name        string            `json:"name"`
-		Namespace   string            `json:"namespace"`
-		Annotations map[string]string `json:"annotations"`
-	} `json:"metadata"`
-	Spec struct {
-		DeploymentType    string `json:"deploymentType"`
-		Cloud             string `json:"cloud"`
-		Region            string `json:"region"`
-		Webhook           string `json:"webhook"`
-		CNI               string `json:"cni"`
-		KubernetesVersion string `json:"kubernetesVersion"`
-		HAControlPlane    bool   `json:"HAControlPlane"`
-		GpuEnabled        bool   `json:"gpuEnabled"`
-		Type              string `json:"type"`
-	} `json:"spec"`
-}
-
-// createCloudspaceHA creates a CloudSpace with HAControlPlane=true by making the
-// API request directly, since the SDK's CreateCloudspace hardcodes it to false.
-// The spec must include type:"hosted" — without it the API returns a 422.
-func (c *spotClient) createCloudspaceHA(ctx context.Context, s *clusterState) error {
-	_, orgID, err := c.rawSDK.GetOrgID(ctx, c.org)
-	if err != nil {
-		return fmt.Errorf("failed to resolve org ID: %w", err)
-	}
-	var body haCloudspaceBody
-	body.APIVersion = "ngpc.rxt.io/v1"
-	body.Kind = "CloudSpace"
-	body.Metadata.Name = s.CloudspaceName
-	body.Metadata.Namespace = orgID
-	body.Metadata.Annotations = map[string]string{}
-	body.Spec.DeploymentType = "gen2"
-	body.Spec.Cloud = "default"
-	body.Spec.Region = s.Region
-	body.Spec.Webhook = s.PreemptionWebhook
-	body.Spec.CNI = s.CNI
-	body.Spec.KubernetesVersion = s.KubernetesVersion
-	body.Spec.HAControlPlane = true
-	body.Spec.GpuEnabled = s.GPUEnabled
-	body.Spec.Type = "hosted"
-
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("failed to marshal HA cloudspace request: %w", err)
-	}
-	logrus.Infof("[rackspacespot] HA cloudspace request body: %s", string(jsonBody))
-
-	url := fmt.Sprintf("%s/apis/ngpc.rxt.io/v1/namespaces/%s/cloudspaces", c.rawSDK.BaseURL, orgID)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonBody))
-	if err != nil {
-		return fmt.Errorf("failed to build HA cloudspace request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.rawSDK.Token)
-	resp, err := c.rawSDK.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("HA cloudspace create request failed: %w", err)
-	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
-	logrus.Infof("[rackspacespot] HA cloudspace response status=%d body=%s", resp.StatusCode, strings.TrimSpace(string(respBody)))
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("HA cloudspace create failed (HTTP %d): %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
-	}
-	return nil
-}
-
 // ensureCloudspace creates a CloudSpace or returns the existing one if already created.
 func (c *spotClient) ensureCloudspace(ctx context.Context, s *clusterState) (*spotv1.CloudSpace, error) {
 	existing, err := c.api.GetCloudspace(ctx, c.org, s.CloudspaceName)
@@ -160,16 +80,9 @@ func (c *spotClient) ensureCloudspace(ctx context.Context, s *clusterState) (*sp
 		DeploymentType:       s.DeploymentType,
 	}
 
-	if s.HAEnabled {
-		logrus.Infof("[rackspacespot] creating cloudspace %s with HA control plane", s.CloudspaceName)
-		if err := c.createCloudspaceHA(ctx, s); err != nil {
-			return nil, fmt.Errorf("failed to create HA cloudspace: %w", err)
-		}
-	} else {
-		logrus.Infof("[rackspacespot] creating cloudspace %s (non-HA)", s.CloudspaceName)
-		if err := c.api.CreateCloudspace(ctx, cs); err != nil {
-			return nil, fmt.Errorf("failed to create cloudspace: %w", err)
-		}
+	logrus.Infof("[rackspacespot] creating cloudspace %s", s.CloudspaceName)
+	if err := c.api.CreateCloudspace(ctx, cs); err != nil {
+		return nil, fmt.Errorf("failed to create cloudspace: %w", err)
 	}
 
 	return c.api.GetCloudspace(ctx, c.org, s.CloudspaceName)

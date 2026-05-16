@@ -64,11 +64,6 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 				Usage:   "Enable GPU support on the CloudSpace",
 				Default: &types.Default{DefaultBool: false},
 			},
-			flagHAEnabled: {
-				Type:    types.BoolType,
-				Usage:   "Enable HA control plane (multi-node etcd)",
-				Default: &types.Default{DefaultBool: false},
-			},
 			flagPreemptionWebhook: {
 				Type:  types.StringType,
 				Usage: "Webhook URL called before spot nodes are preempted",
