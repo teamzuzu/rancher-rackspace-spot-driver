@@ -1,6 +1,6 @@
 # Rancher Cluster Driver For Rackspace Spot
 
-This driver lets you create, scale, and delete Rackspace Spot **CloudSpaces** (managed Kubernetes clusters) directly from the Rancher UI or API, alongside your other cluster providers. It supports:
+This driver lets you create, scale, and delete Rackspace Spot **CloudSpaces** (managed Kubernetes clusters) directly from the Rancher UI.
 
 ### Features
 
