@@ -66,8 +66,8 @@ RUN pip3 install --quiet --break-system-packages \
     mkdocs-minify-plugin \
     mkdocs-git-revision-date-localized-plugin
 
-# Trust any directory — needed when running as root inside a GitHub Actions container job
-RUN git config --global --add safe.directory '*'
+# Trust any directory — needed inside GitHub Actions container jobs where HOME is overridden
+RUN git config --system --add safe.directory '*'
 
 RUN go version && node --version && npm --version && helm version --short && \
     goreleaser --version && golangci-lint --version && \
