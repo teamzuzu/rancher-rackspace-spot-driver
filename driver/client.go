@@ -63,10 +63,10 @@ func newSpotClient(ctx context.Context, refreshToken, org string) (*spotClient, 
 }
 
 // haCloudspaceBody is the request body for creating an HA CloudSpace directly.
-// We cannot reuse spotv1.CloudSpaceSpec because the SDK has a bug: it tags
-// HAControlPlane as json:"HAControlPlane" (uppercase), which the Rackspace API
-// rejects with a 422 "invalid value HA" error. The correct camelCase key is
-// "haControlPlane".
+// The SDK's CreateCloudspace hardcodes HAControlPlane:false and omits the
+// "type":"hosted" field that the Rackspace Spot API requires for HA clusters.
+// Inspecting a real HA CloudSpace (created via the native Spot GUI) confirmed
+// the exact spec: HAControlPlane (uppercase), type:"hosted", webhook:"" present.
 type haCloudspaceBody struct {
 	APIVersion string `json:"apiVersion"`
 	Kind       string `json:"kind"`
@@ -79,16 +79,18 @@ type haCloudspaceBody struct {
 		DeploymentType    string `json:"deploymentType"`
 		Cloud             string `json:"cloud"`
 		Region            string `json:"region"`
-		Webhook           string `json:"webhook,omitempty"`
+		Webhook           string `json:"webhook"`
 		CNI               string `json:"cni"`
 		KubernetesVersion string `json:"kubernetesVersion"`
-		HAControlPlane    bool   `json:"haControlPlane"`
+		HAControlPlane    bool   `json:"HAControlPlane"`
 		GpuEnabled        bool   `json:"gpuEnabled"`
+		Type              string `json:"type"`
 	} `json:"spec"`
 }
 
-// createCloudspaceHA creates a CloudSpace with haControlPlane=true by making the
+// createCloudspaceHA creates a CloudSpace with HAControlPlane=true by making the
 // API request directly, since the SDK's CreateCloudspace hardcodes it to false.
+// The spec must include type:"hosted" — without it the API returns a 422.
 func (c *spotClient) createCloudspaceHA(ctx context.Context, s *clusterState) error {
 	_, orgID, err := c.rawSDK.GetOrgID(ctx, c.org)
 	if err != nil {
@@ -108,6 +110,7 @@ func (c *spotClient) createCloudspaceHA(ctx context.Context, s *clusterState) er
 	body.Spec.KubernetesVersion = s.KubernetesVersion
 	body.Spec.HAControlPlane = true
 	body.Spec.GpuEnabled = s.GPUEnabled
+	body.Spec.Type = "hosted"
 
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
