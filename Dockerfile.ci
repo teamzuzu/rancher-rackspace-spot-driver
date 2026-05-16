@@ -1,0 +1,70 @@
+# CI image for rancher-rackspace-spot-driver workflows.
+# Built and pushed to GHCR by .github/workflows/docker-ci.yml.
+# Bump the ARG versions here to upgrade tools; the docker-ci workflow
+# triggers on changes to this file.
+
+FROM ubuntu:24.04
+
+ARG GO_VERSION=1.25.0
+ARG NODE_MAJOR=20
+ARG GORELEASER_VERSION=2.8.2
+ARG GOLANGCI_LINT_VERSION=2.12.2
+ARG ACTIONLINT_VERSION=1.7.7
+ARG HELM_VERSION=3.17.3
+ARG TARGETARCH=amd64
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    GOROOT=/usr/local/go \
+    GOPATH=/root/go \
+    PATH=/usr/local/go/bin:/root/go/bin:/usr/local/bin:$PATH
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    jq \
+    python3 \
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Go
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL "https://dl.google.com/go/go${GO_VERSION}.linux-${ARCH}.tar.gz" \
+    | tar -C /usr/local -xz
+
+# Node.js (via NodeSource)
+RUN curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Helm
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${ARCH}.tar.gz" \
+    | tar -xz --strip-components=1 -C /usr/local/bin "linux-${ARCH}/helm"
+
+# GoReleaser
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_Linux_${ARCH}.tar.gz" \
+    | tar -xz -C /usr/local/bin goreleaser
+
+# golangci-lint
+RUN curl -fsSL \
+    "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-$(dpkg --print-architecture).tar.gz" \
+    | tar -xz --strip-components=1 -C /usr/local/bin \
+    "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-$(dpkg --print-architecture)/golangci-lint"
+
+# actionlint
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_${ARCH}.tar.gz" \
+    | tar -xz -C /usr/local/bin actionlint
+
+# MkDocs + plugins (system-level via pip with break-system-packages)
+RUN pip3 install --quiet --break-system-packages \
+    "mkdocs-material==9.5.*" \
+    mkdocs-minify-plugin \
+    mkdocs-git-revision-date-localized-plugin
+
+RUN go version && node --version && npm --version && helm version --short && \
+    goreleaser --version && golangci-lint --version && \
+    actionlint --version && mkdocs --version

@@ -69,22 +69,15 @@ jobs:
     name: Build & publish binaries
     needs: [validate, tag]
     runs-on: ubuntu-latest
+    container: ghcr.io/${{ github.repository }}-ci:latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ needs.validate.outputs.version }}
 
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-          cache: true
-
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v7
-        with:
-          version: "~> v2"
-          args: release --clean ${{ inputs.draft && '--draft' || '' }}
+        run: goreleaser release --clean ${{ inputs.draft && '--draft' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -92,6 +85,7 @@ jobs:
     name: Build UI extension, package chart, update docs
     needs: [validate, tag, goreleaser]
     runs-on: ubuntu-latest
+    container: ghcr.io/${{ github.repository }}-ci:latest
     steps:
       - uses: actions/checkout@v6
         with:
@@ -102,11 +96,6 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: ui/.nvmrc
 
       - name: Install UI dependencies
         working-directory: ui
@@ -133,20 +122,14 @@ jobs:
           (cd "docs/extensions/rackspacespot/${VER}" && find . -type f | sed 's|^\./||' | sort) \
             > "docs/extensions/rackspacespot/${VER}/files.txt"
 
-      - name: Install Helm
-        uses: azure/setup-helm@v5
-
       - name: Get binary checksum
         id: checksum
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ needs.validate.outputs.version }}"
-          mkdir -p /tmp/release-checksums
-          curl -fsSL \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION}/checksums.txt" \
-            -o /tmp/release-checksums/checksums.txt
-          CHECKSUM=$(grep "rancher-rackspace-spot-driver_linux_amd64.tar.gz" \
-            /tmp/release-checksums/checksums.txt | awk '{print $1}')
+          gh release download "${VERSION}" --pattern checksums.txt --output /tmp/checksums.txt
+          CHECKSUM=$(grep "rancher-rackspace-spot-driver_linux_amd64.tar.gz" /tmp/checksums.txt | awk '{print $1}')
           echo "amd64=${CHECKSUM}" >> "$GITHUB_OUTPUT"
 
       - name: Package Helm chart
@@ -175,19 +158,12 @@ jobs:
             --destination ./release_artifacts
 
       - name: Upload Helm chart to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ needs.validate.outputs.version }}"
           VER="${VERSION#v}"
-          RELEASE_ID=$(curl -fsSL \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${VERSION}" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
-          curl -fsSL \
-            -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/gzip" \
-            --data-binary "@release_artifacts/rackspacespot-${VER}.tgz" \
-            "https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=rackspacespot-${VER}.tgz"
+          gh release upload "${VERSION}" "release_artifacts/rackspacespot-${VER}.tgz" --clobber
 
       - name: Update Helm repo index
         run: |
@@ -221,10 +197,6 @@ jobs:
           fi
 
       - name: Trigger docs site rebuild
-        run: |
-          curl -fsSL \
-            -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/pages.yml/dispatches" \
-            -d '{"ref":"main"}'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --ref main
