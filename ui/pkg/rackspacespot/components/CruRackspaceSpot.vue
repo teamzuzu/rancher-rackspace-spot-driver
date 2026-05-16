@@ -103,6 +103,16 @@
         />
       </div>
     </div>
+    <div class="row mt-10">
+      <div class="col span-12">
+        <Checkbox
+          v-model:value="config.haEnabled"
+          label="Enable HA control plane (3-node etcd — cannot be changed after creation)"
+          :disabled="mode === 'edit'"
+          :mode="mode"
+        />
+      </div>
+    </div>
 
     <!-- ── Spot Node Pools ───────────────────────────────── -->
     <h3 class="mt-20">Spot Node Pools</h3>
@@ -325,6 +335,7 @@ const DEFAULTS = {
   onDemandEnabled:         false,
   onDemandServerClass:     'gp.vs1.medium-iad',
   onDemandNodeCount:       1,
+  haEnabled:               false,
 };
 
 function emptyPool() {

@@ -1,8 +1,11 @@
 package driver
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -38,8 +41,9 @@ type spotAPI interface {
 }
 
 type spotClient struct {
-	api spotAPI
-	org string
+	api    spotAPI
+	rawSDK *spotv1.RackspaceSpotClient
+	org    string
 }
 
 func newSpotClient(ctx context.Context, refreshToken, org string) (*spotClient, error) {
@@ -54,7 +58,55 @@ func newSpotClient(ctx context.Context, refreshToken, org string) (*spotClient, 
 		return nil, fmt.Errorf("spot authentication failed: %w", err)
 	}
 
-	return &spotClient{api: c, org: org}, nil
+	return &spotClient{api: c, rawSDK: c, org: org}, nil
+}
+
+// createCloudspaceHA creates a CloudSpace with HAControlPlane=true by making the
+// API request directly, since the SDK's CreateCloudspace hardcodes HAControlPlane to false.
+func (c *spotClient) createCloudspaceHA(ctx context.Context, s *clusterState) error {
+	_, orgID, err := c.rawSDK.GetOrgID(ctx, c.org)
+	if err != nil {
+		return fmt.Errorf("failed to resolve org ID: %w", err)
+	}
+	body := spotv1.CloudSpaceCreateRequestBody{
+		APIVersion: "ngpc.rxt.io/v1",
+		Kind:       "CloudSpace",
+		Metadata: spotv1.ObjectMetaWithAnnotations{
+			Name:        s.CloudspaceName,
+			Namespace:   orgID,
+			Annotations: map[string]string{},
+		},
+		Spec: spotv1.CloudSpaceSpec{
+			DeploymentType:    "gen2",
+			Cloud:             "default",
+			Region:            s.Region,
+			Webhook:           s.PreemptionWebhook,
+			CNI:               s.CNI,
+			KubernetesVersion: s.KubernetesVersion,
+			HAControlPlane:    true,
+			GpuEnabled:        s.GPUEnabled,
+		},
+	}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("failed to marshal HA cloudspace request: %w", err)
+	}
+	url := fmt.Sprintf("%s/apis/ngpc.rxt.io/v1/namespaces/%s/cloudspaces", c.rawSDK.BaseURL, orgID)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonBody))
+	if err != nil {
+		return fmt.Errorf("failed to build HA cloudspace request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.rawSDK.Token)
+	resp, err := c.rawSDK.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("HA cloudspace create request failed: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("HA cloudspace create returned status %d", resp.StatusCode)
+	}
+	return nil
 }
 
 // ensureCloudspace creates a CloudSpace or returns the existing one if already created.
@@ -79,8 +131,14 @@ func (c *spotClient) ensureCloudspace(ctx context.Context, s *clusterState) (*sp
 		DeploymentType:       s.DeploymentType,
 	}
 
-	if err := c.api.CreateCloudspace(ctx, cs); err != nil {
-		return nil, fmt.Errorf("failed to create cloudspace: %w", err)
+	if s.HAEnabled {
+		if err := c.createCloudspaceHA(ctx, s); err != nil {
+			return nil, fmt.Errorf("failed to create HA cloudspace: %w", err)
+		}
+	} else {
+		if err := c.api.CreateCloudspace(ctx, cs); err != nil {
+			return nil, fmt.Errorf("failed to create cloudspace: %w", err)
+		}
 	}
 
 	return c.api.GetCloudspace(ctx, c.org, s.CloudspaceName)
