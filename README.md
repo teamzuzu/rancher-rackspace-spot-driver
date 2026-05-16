@@ -1,11 +1,5 @@
 # Rancher Cluster Driver For Rackspace Spot
 
-
-
-A [rancher kontainer-engine](https://github.com/rancher/kontainer-engine) cluster driver that provisions and manages Kubernetes clusters on [Rackspace Spot](https://spot.rackspace.com) — the spot compute platform.
-
-## Overview
-
 This driver lets you create, scale, and delete Rackspace Spot **CloudSpaces** (managed Kubernetes clusters) directly from the Rancher UI or API, alongside your other cluster providers. It supports:
 
 ### Features
@@ -19,7 +13,7 @@ This driver lets you create, scale, and delete Rackspace Spot **CloudSpaces** (m
 
 ### Unsupported
 
-- HA Mode
+- HA etcd mode
 
 
 ---
