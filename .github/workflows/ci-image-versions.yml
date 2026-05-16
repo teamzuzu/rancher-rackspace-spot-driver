@@ -1,0 +1,77 @@
+name: Update CI image versions
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Check and update tool versions
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Resolve latest versions
+        id: latest
+        run: |
+          # Go — latest stable patch for the minor pinned in go.mod
+          GO_MINOR=$(grep '^go ' go.mod | awk '{print $2}' | cut -d. -f1,2)
+          LATEST_GO=$(curl -fsSL 'https://go.dev/dl/?mode=json' \
+            | jq -r '.[].version' \
+            | grep "^go${GO_MINOR}\." \
+            | head -1 \
+            | sed 's/^go//')
+
+          # Latest stable GitHub release for each tool
+          latest_gh() { gh release view --repo "$1" --json tagName -q '.tagName | ltrimstr("v")'; }
+          LATEST_GORELEASER=$(latest_gh goreleaser/goreleaser)
+          LATEST_GOLANGCI=$(latest_gh golangci/golangci-lint)
+          LATEST_ACTIONLINT=$(latest_gh rhysd/actionlint)
+          LATEST_HELM=$(latest_gh helm/helm)
+
+          echo "go=$LATEST_GO"                   >> "$GITHUB_OUTPUT"
+          echo "goreleaser=$LATEST_GORELEASER"   >> "$GITHUB_OUTPUT"
+          echo "golangci=$LATEST_GOLANGCI"       >> "$GITHUB_OUTPUT"
+          echo "actionlint=$LATEST_ACTIONLINT"   >> "$GITHUB_OUTPUT"
+          echo "helm=$LATEST_HELM"               >> "$GITHUB_OUTPUT"
+
+      - name: Patch Dockerfile.ci
+        id: patch
+        run: |
+          update_arg() {
+            local arg="$1" latest="$2"
+            [ -z "$latest" ] && return
+            current=$(grep "^ARG ${arg}=" Dockerfile.ci | cut -d= -f2)
+            if [ "$current" != "$latest" ]; then
+              echo "  $arg: $current → $latest"
+              sed -i "s|^ARG ${arg}=.*|ARG ${arg}=${latest}|" Dockerfile.ci
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+            fi
+          }
+          update_arg GO_VERSION            "${{ steps.latest.outputs.go }}"
+          update_arg GORELEASER_VERSION    "${{ steps.latest.outputs.goreleaser }}"
+          update_arg GOLANGCI_LINT_VERSION "${{ steps.latest.outputs.golangci }}"
+          update_arg ACTIONLINT_VERSION    "${{ steps.latest.outputs.actionlint }}"
+          update_arg HELM_VERSION          "${{ steps.latest.outputs.helm }}"
+
+      - name: Open PR with updated versions
+        if: steps.patch.outputs.changed == 'true'
+        run: |
+          BRANCH="chore/ci-image-versions-$(date +%Y%m%d)"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add Dockerfile.ci
+          git commit -m "chore: bump CI image tool versions [skip ci]"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "chore: bump CI image tool versions" \
+            --body "Automated weekly version check. Merging triggers the docker-ci workflow to rebuild the image." \
+            --base main
