@@ -20,6 +20,8 @@ export default class RackspaceSpotProvisioner implements IClusterProvisioner {
 
   get description(): string { return 'Kubernetes clusters on Rackspace Spot instances'; }
 
+  get icon(): any { return require('./assets/rackspace-spot.svg'); }
+
   get component(): any { return CruRackspaceSpot; }
 
   get hidden(): boolean { return false; }
