@@ -69,22 +69,15 @@ jobs:
     name: Build & publish binaries
     needs: [validate, tag]
     runs-on: ubuntu-latest
+    container: ghcr.io/${{ github.repository }}-ci:latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ needs.validate.outputs.version }}
 
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-          cache: true
-
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v7
-        with:
-          version: "~> v2"
-          args: release --clean ${{ inputs.draft && '--draft' || '' }}
+        run: goreleaser release --clean ${{ inputs.draft && '--draft' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -92,6 +85,7 @@ jobs:
     name: Build UI extension, package chart, update docs
     needs: [validate, tag, goreleaser]
     runs-on: ubuntu-latest
+    container: ghcr.io/${{ github.repository }}-ci:latest
     steps:
       - uses: actions/checkout@v6
         with:
@@ -102,11 +96,6 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: ui/.nvmrc
 
       - name: Install UI dependencies
         working-directory: ui
@@ -132,9 +121,6 @@ jobs:
           # Generate files.txt listing all files under the versioned dir
           (cd "docs/extensions/rackspacespot/${VER}" && find . -type f | sed 's|^\./||' | sort) \
             > "docs/extensions/rackspacespot/${VER}/files.txt"
-
-      - name: Install Helm
-        uses: azure/setup-helm@v5
 
       - name: Get binary checksum
         id: checksum

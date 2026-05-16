@@ -16,15 +16,9 @@ jobs:
   actionlint:
     name: actionlint
     runs-on: ubuntu-latest
+    container: ghcr.io/${{ github.repository }}-ci:latest
     steps:
       - uses: actions/checkout@v6
-
-      - name: Install actionlint
-        run: |
-          mkdir -p "$HOME/.local/bin"
-          curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash \
-            | bash -s -- latest "$HOME/.local/bin"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Run actionlint
         run: actionlint -color .github/workflows/*.yml
