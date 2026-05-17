@@ -1,20 +1,18 @@
 # Rancher Cluster Driver For Rackspace Spot
 
-This driver lets you create, scale, and delete Rackspace Spot **CloudSpaces** (managed Kubernetes clusters) directly from the Rancher UI.
+A Rancher cluster driver and UI extension to create and manage Rackspace Spot "Cloudspaces" aka managed kubernetes clusters. 
 
 ### Features
 
-- Create and destroy Rackspace clusters in different regions [ regions untested ]
-- Spot node pools with configurable bid prices and autoscaling [ tested ] 
-- Optional on-demand node pools for stable baseline capacity [ tested ] 
-- GPU-enabled CloudSpaces - [ tested ] 
-- Preemption webhook integration - [ untested ] 
-- Kubernetes version management - [ upgrades / downgrades untested ]
+- Create Cloudspaces in all supported Spot regions
+- Select from a list of supported Cloudspace kubernetes versions
+- Create node pools with configurable bid and autoscaling options  
+- Optional on-demand node pool 
+- GPU-enabled CloudSpaces
 
 ### Unsupported
 
-- HA etcd mode
-
+- HA control plane / etcd mode  
 
 ---
 
