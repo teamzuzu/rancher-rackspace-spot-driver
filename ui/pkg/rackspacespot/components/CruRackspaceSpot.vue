@@ -30,19 +30,19 @@
     <div class="row">
       <div class="col span-6">
         <LabeledInput
-          v-model:value="config.rackspaceSpotRefreshToken"
-          label="Refresh Token"
-          type="password"
-          placeholder="Rackspace Spot refresh token"
+          v-model:value="config.rackspaceSpotOrganization"
+          label="Organization"
+          placeholder="your-org-name"
           :required="true"
           :mode="mode"
         />
       </div>
       <div class="col span-6">
         <LabeledInput
-          v-model:value="config.rackspaceSpotOrganization"
-          label="Organization"
-          placeholder="your-org-name"
+          v-model:value="config.rackspaceSpotRefreshToken"
+          label="Refresh Token"
+          type="password"
+          placeholder="Rackspace Spot refresh token"
           :required="true"
           :mode="mode"
         />
@@ -80,13 +80,6 @@
     </div>
     <div class="row mt-10">
       <div class="col span-4">
-        <Checkbox
-          v-model:value="config.gpuEnabled"
-          label="Enable GPU support"
-          :mode="mode"
-        />
-      </div>
-      <div class="col span-4">
         <LabeledInput
           v-model:value="config.preemptionWebhookUrl"
           label="Preemption Webhook URL"
@@ -95,10 +88,9 @@
         />
       </div>
       <div class="col span-4">
-        <LabeledInput
-          v-model:value="config.deploymentType"
-          label="Deployment Type"
-          placeholder="optional"
+        <Checkbox
+          v-model:value="config.gpuEnabled"
+          label="Enable GPU support"
           :mode="mode"
         />
       </div>
