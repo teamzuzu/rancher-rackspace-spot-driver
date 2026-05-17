@@ -157,7 +157,7 @@ An on-demand pool provides stable capacity that is never preempted. Useful for s
 
 ### Available server classes
 
-Run `rxtspot server-classes list` to see classes available in your region, or visit the [Rackspace Spot portal](https://spot.rackspace.com).
+Run `spotctl server-classes list` to see classes available in your region, or visit the [Rackspace Spot portal](https://spot.rackspace.com).
 
 ---
 
@@ -231,16 +231,6 @@ The driver binary is started by Rancher as a sidecar process. Rancher communicat
 State (organization, cloudspace name, pool configuration) is serialised as JSON into `ClusterInfo.Metadata` and passed back on every subsequent call, so the driver is fully stateless between invocations. The refresh token is stored separately in `ClusterInfo.Password` (not in the JSON blob) so it is never logged.
 
 The UI extension (`ui/`) is a separate build artifact compiled with `@rancher/shell` 3.0.8. It is registered as a `kontainer` provisioner and writes cluster config into `cluster.genericEngineConfig`, which Rancher passes through to the driver binary.
-
----
-
-## Releases
-
-Binaries for `linux/amd64` and `linux/arm64` are published to [GitHub Releases](https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases) automatically on every version tag. A container image is also pushed to the GitHub Container Registry:
-
-```bash
-docker pull ghcr.io/teamzuzu/rancher-rackspace-spot-driver:latest
-```
 
 ---
 
