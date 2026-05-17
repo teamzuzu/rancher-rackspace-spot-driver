@@ -58,7 +58,7 @@
           label="Region"
           :options="regionOptions"
           :required="true"
-          :mode="mode"
+          :mode="mode === 'edit' ? 'view' : mode"
         />
       </div>
       <div class="col span-4">
@@ -74,7 +74,7 @@
           v-model:value="config.cni"
           label="CNI"
           :options="cniOptions"
-          :mode="mode"
+          :mode="mode === 'edit' ? 'view' : mode"
         />
       </div>
     </div>
