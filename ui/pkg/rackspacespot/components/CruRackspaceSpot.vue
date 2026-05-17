@@ -118,6 +118,7 @@
             v-model:value="config.spotServerClass"
             label="Server Class"
             :options="serverClassOptions"
+            :taggable="true"
             :mode="mode"
           />
         </div>
@@ -193,6 +194,7 @@
             v-model:value="pool.serverClass"
             label="Server Class"
             :options="serverClassOptions"
+            :taggable="true"
             :mode="mode"
           />
         </div>
@@ -274,6 +276,7 @@
             v-model:value="config.onDemandServerClass"
             label="Server Class"
             :options="serverClassOptions"
+            :taggable="true"
             :mode="mode"
           />
         </div>
@@ -444,14 +447,22 @@ export default defineComponent({
     },
     serverClassOptions() {
       const region = this.config.rackspaceSpotRegion;
-      const filtered = region
+      const source = region
         ? this.knownServerClasses.filter(sc => sc.region === region)
         : this.knownServerClasses;
-      const source = filtered.length ? filtered : this.knownServerClasses;
       return source.map(sc => ({
         label: `${sc.name} — ${sc.category}, ${sc.cpu} CPU, ${sc.memory}`,
         value: sc.name,
       }));
+    },
+  },
+
+  watch: {
+    'config.rackspaceSpotRegion'(newRegion, oldRegion) {
+      if (this.mode === 'edit' || newRegion === oldRegion) return;
+      this.config.spotServerClass     = '';
+      this.config.onDemandServerClass = '';
+      this.additionalSpotPools.forEach(p => { p.serverClass = ''; });
     },
   },
 
