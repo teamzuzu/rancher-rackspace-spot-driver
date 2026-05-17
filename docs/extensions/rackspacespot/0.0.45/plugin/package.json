@@ -1,0 +1,16 @@
+{
+  "name": "rackspacespot",
+  "description": "Rancher UI Extension for the Rackspace Spot cluster driver",
+  "version": "0.0.45",
+  "private": false,
+  "rancher": true,
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-typescript": "~5.0.0",
+    "@vue/cli-service": "~5.0.0"
+  },
+  "files": [
+    "**/*"
+  ],
+  "main": "rackspacespot-0.0.45.umd.min.js"
+}
