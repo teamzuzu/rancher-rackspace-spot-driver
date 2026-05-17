@@ -12,7 +12,10 @@ A Rancher cluster driver and UI extension to create and manage Rackspace Spot "C
 
 ### Unsupported
 
-- HA control plane / etcd mode  
+- HA control plane / etcd mode 
+- Kubernetes upgrades 
+
+Due to limitations in the Spot API
 
 ---
 
@@ -62,16 +65,6 @@ The driver and its UI extension are distributed as a Helm chart via a GitHub Pag
    | **URL** | `https://teamzuzu.github.io/rancher-rackspace-spot-driver` |
 
 4. Click **Create**.
-
-Alternatively, install via Helm directly:
-
-```bash
-helm repo add rackspace-spot https://teamzuzu.github.io/rancher-rackspace-spot-driver
-helm repo update
-helm install rackspacespot rackspace-spot/rackspacespot \
-  --namespace cattle-ui-plugin-system \
-  --create-namespace
-```
 
 ### Step 2 — Install the extension
 
