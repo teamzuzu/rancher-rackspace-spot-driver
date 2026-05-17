@@ -447,9 +447,12 @@ export default defineComponent({
     },
     serverClassOptions() {
       const region = this.config.rackspaceSpotRegion;
-      const source = region
+      const filtered = region
         ? this.knownServerClasses.filter(sc => sc.region === region)
         : this.knownServerClasses;
+      // Fall back to all known classes when the selected region has no predefined
+      // entries — they serve as a naming reference; taggable allows free-text entry.
+      const source = filtered.length ? filtered : this.knownServerClasses;
       return source.map(sc => ({
         label: `${sc.name} — ${sc.category}, ${sc.cpu} CPU, ${sc.memory}`,
         value: sc.name,
