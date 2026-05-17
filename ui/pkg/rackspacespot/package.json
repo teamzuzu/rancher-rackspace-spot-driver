@@ -1,7 +1,7 @@
 {
   "name": "rackspacespot",
   "description": "Rancher UI Extension for the Rackspace Spot cluster driver",
-  "version": "0.0.45",
+  "version": "0.0.46",
   "private": false,
   "rancher": {
     "annotations": {
