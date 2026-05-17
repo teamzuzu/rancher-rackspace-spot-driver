@@ -447,16 +447,16 @@ export default defineComponent({
     },
     serverClassOptions() {
       const region = this.config.rackspaceSpotRegion;
-      const filtered = region
-        ? this.knownServerClasses.filter(sc => sc.region === region)
-        : this.knownServerClasses;
-      // Fall back to all known classes when the selected region has no predefined
-      // entries — they serve as a naming reference; taggable allows free-text entry.
-      const source = filtered.length ? filtered : this.knownServerClasses;
-      return source.map(sc => ({
-        label: `${sc.name} — ${sc.category}, ${sc.cpu} CPU, ${sc.memory}`,
-        value: sc.name,
-      }));
+      // Derive location code from region string: 'us-east-iad-1' → 'iad', 'aus-syd-1' → 'syd'
+      const parts = region ? region.split('-') : [];
+      const locCode = parts.length >= 2 ? parts[parts.length - 2] : 'iad';
+      return this.knownServerClasses.map(sc => {
+        const name = sc.name.replace(/-iad$/, `-${locCode}`);
+        return {
+          label: `${name} — ${sc.category}, ${sc.cpu} CPU, ${sc.memory}`,
+          value: name,
+        };
+      });
     },
   },
 
