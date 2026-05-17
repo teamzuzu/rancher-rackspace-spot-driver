@@ -91,7 +91,7 @@
         <Checkbox
           v-model:value="config.gpuEnabled"
           label="Enable GPU support"
-          :mode="mode"
+          :mode="mode === 'edit' ? 'view' : mode"
         />
       </div>
     </div>
