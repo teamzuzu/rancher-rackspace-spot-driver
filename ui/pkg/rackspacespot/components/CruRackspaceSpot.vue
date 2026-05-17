@@ -66,7 +66,7 @@
           v-model:value="config.kubernetesVersion"
           label="Kubernetes Version"
           :options="k8sVersionOptions"
-          :mode="mode"
+          :mode="mode === 'edit' ? 'view' : mode"
         />
       </div>
       <div class="col span-4">
