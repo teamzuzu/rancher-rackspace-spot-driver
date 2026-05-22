@@ -17,12 +17,11 @@ All options are available in the Rancher UI when creating or editing a cluster. 
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `region` | string | **required** | Rackspace Spot region where the CloudSpace is created (e.g. `us-east-1`). |
+| `region` | string | **required** | Rackspace Spot region where the CloudSpace is created (e.g. `us-east-iad-1`). |
 | `k8sVersion` | string | `1.33.0` | Kubernetes version for the control plane. Must be a version supported by Rackspace Spot. |
 | `cni` | string | `calico` | CNI plugin. Accepted values: `calico`, `cilium`, `byocni`. |
 | `gpuEnabled` | bool | `false` | Attach GPU resources to the CloudSpace. Requires a region that supports GPUs. |
 | `preemptionWebhook` | string | — | HTTPS URL called by Rackspace Spot before preempting a spot node. Useful for draining workloads gracefully. |
-| `deploymentType` | string | — | Override the CloudSpace deployment type (e.g. `spot`, `on-demand`). Leave blank to use the region default. |
 
 ---
 
@@ -92,7 +91,7 @@ When editing an existing cluster, only the following fields are reconciled. All 
 | Option | Updateable |
 |---|---|
 | `refreshToken` | Yes (use to rotate credentials without recreating the cluster) |
-| `k8sVersion` | Yes (stored; applied on next reconciliation) |
+| `k8sVersion` | No (set at creation time; the Spot API does not support in-place upgrades) |
 | `spotNodeCount` | Yes |
 | `spotBidPrice` | Yes |
 | `spotAutoscaling` | Yes |

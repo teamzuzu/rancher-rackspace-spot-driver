@@ -78,8 +78,8 @@ The cluster driver status changes to **Active** within ~30 seconds.
 | Field | Description |
 |---|---|
 | **Cluster Name** | A display name for the cluster in Rancher (automatically converted to a valid CloudSpace name) |
-| **Refresh Token** | Your Rackspace Spot API refresh token |
 | **Organization** | Your Rackspace Spot organization name |
+| **Refresh Token** | Your Rackspace Spot API refresh token |
 
 ### Optional fields
 

@@ -8,7 +8,7 @@ This guide covers building, testing, and releasing the driver locally.
 
 | Tool | Version | Notes |
 |---|---|---|
-| Go | ≥ 1.24 | `go.mod` specifies the minimum |
+| Go | ≥ 1.25 | `go.mod` specifies the minimum |
 | golangci-lint (optional) | Latest | Or rely on the CI lint job |
 
 ---

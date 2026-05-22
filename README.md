@@ -115,12 +115,11 @@ All options are set in the Rancher cluster creation form.
 
 | Option | Required | Default | Description |
 |---|---|---|---|
-| `rackspace-spot-region` | ✅ | — | Rackspace Spot region (e.g. `us-east-1`) |
+| `rackspace-spot-region` | ✅ | — | Rackspace Spot region (e.g. `us-east-iad-1`) |
 | `kubernetes-version` | | `1.33.0` | Kubernetes version for the CloudSpace |
 | `cni` | | `calico` | CNI plugin (`calico`, `cilium`, or `byocni`) |
 | `gpu-enabled` | | `false` | Enable GPU support on the CloudSpace |
 | `preemption-webhook-url` | | — | Webhook called before spot nodes are preempted |
-| `deployment-type` | | — | CloudSpace deployment type (provider-specific) |
 
 ### Spot node pool
 
@@ -162,7 +161,7 @@ Run `spotctl server-classes list` to see classes available in your region, or vi
 git clone https://github.com/teamzuzu/rancher-rackspace-spot-driver
 cd rancher-rackspace-spot-driver
 
-# Resolve dependencies (requires Go 1.24+)
+# Resolve dependencies (requires Go 1.25+)
 go mod tidy
 
 # Build
