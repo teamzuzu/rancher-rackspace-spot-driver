@@ -77,11 +77,16 @@ Rancher installs the Helm chart, which registers:
 
 The cluster driver status changes to **Active** within ~30 seconds.
 
+![Rackspace Spot extension installed in Rancher](docs/ui.png)
+
 ### Step 3 — Create a cluster
 
 1. Navigate to **☰ → Cluster Management → Clusters → Create**.
 2. Choose **Rackspace Spot** from the provider list.
 3. Fill in the cluster configuration (see [Configuration reference](#configuration-reference) below).
+
+![Cluster creation form](docs/create.png)
+
 4. Click **Create**.
 
 Rancher will call the driver, which creates the CloudSpace and node pools. The cluster moves through `Provisioning → Waiting → Active` as the control plane and nodes come online (typically 5–10 minutes).
