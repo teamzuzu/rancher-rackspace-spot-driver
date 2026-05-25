@@ -4,18 +4,18 @@ A Rancher cluster driver and UI extension to create and manage Rackspace Spot "C
 
 ### Features
 
-- Create Cloudspaces in all supported Spot regions
+- Create and manage Cloudspaces in all supported Spot regions via the Rancher UI
 - Select from a list of supported Cloudspace kubernetes versions
-- Create node pools with configurable bid and autoscaling options  
-- Optional on-demand node pool 
-- GPU-enabled CloudSpaces
+- Create and update node pools with configurable bid and autoscaling options  
+- Add an optional on-demand node pool 
+- GPU-enabled CloudSpaces 
 
 ### Unsupported
 
-- HA control plane / etcd mode 
+- HA control plane  
 - Kubernetes upgrades 
 
-Due to limitations in the Spot API
+Due to limitations in the Spot API these have to be done via the native Spot console
 
 ---
 
@@ -29,7 +29,7 @@ Due to limitations in the Spot API
 
 ### Getting a refresh token
 
-The easiest way is directly from the Rackspace Spot console — no CLI required:
+The easiest way is directly from the Spot console:
 
 1. Log in to the [Rackspace Spot console](https://spot.rackspace.com)
 2. Go to **Account → API Access**
