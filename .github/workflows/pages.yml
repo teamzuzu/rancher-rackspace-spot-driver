@@ -22,7 +22,6 @@ jobs:
   build:
     name: Build docs
     runs-on: ubuntu-latest
-    container: ghcr.io/${{ github.repository }}-ci:latest
     steps:
       - uses: actions/checkout@v6
 
