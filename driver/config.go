@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	spotv1 "github.com/rackspace-spot/spot-go-sdk/api/v1"
 	"github.com/google/uuid"
 	"github.com/rancher/kontainer-engine/types"
 	"github.com/sirupsen/logrus"
@@ -239,6 +240,56 @@ func stateFromClusterInfo(info *types.ClusterInfo) (*clusterState, error) {
 		s.RefreshToken = info.Password
 	}
 	return s, nil
+}
+
+// stateFromCloudspace builds a clusterState by reading the live config of an
+// existing cloudspace. org and token are taken from user-supplied opts since
+// they are not stored on the cloudspace itself.
+func stateFromCloudspace(cs *spotv1.CloudSpace, org, token string) *clusterState {
+	s := &clusterState{
+		RefreshToken:      token,
+		Organization:      org,
+		CloudspaceName:    cs.Name,
+		Region:            cs.Region,
+		KubernetesVersion: cs.KubernetesVersion,
+		CNI:               cs.CNI,
+		GPUEnabled:        cs.GpuEnabled,
+		PreemptionWebhook: cs.PreemptionWebhookURL,
+		DeploymentType:    cs.DeploymentType,
+	}
+
+	for i, p := range cs.SpotNodepools {
+		if i == 0 {
+			s.SpotPoolName    = p.Name
+			s.SpotServerClass = p.ServerClass
+			s.SpotNodeCount   = p.Desired
+			s.SpotBidPrice    = p.BidPrice
+			s.SpotAutoscaling = p.Autoscaling.Enabled
+			s.SpotMinNodes    = p.Autoscaling.MinNodes
+			s.SpotMaxNodes    = p.Autoscaling.MaxNodes
+		} else {
+			s.AdditionalSpotPools = append(s.AdditionalSpotPools, SpotPoolConfig{
+				Name:        p.Name,
+				ServerClass: p.ServerClass,
+				NodeCount:   p.Desired,
+				BidPrice:    p.BidPrice,
+				Autoscaling: p.Autoscaling.Enabled,
+				MinNodes:    p.Autoscaling.MinNodes,
+				MaxNodes:    p.Autoscaling.MaxNodes,
+			})
+		}
+	}
+
+	if len(cs.OnDemandNodePools) > 0 {
+		p := cs.OnDemandNodePools[0]
+		s.OnDemandEnabled  = true
+		s.OnDemandPoolName = p.Name
+		s.OnDemandClass    = p.ServerClass
+		s.OnDemandCount    = p.Desired
+		s.OnDemandPrice    = p.OnDemandPricePerHour
+	}
+
+	return s
 }
 
 func (s *clusterState) save(info *types.ClusterInfo) error {
