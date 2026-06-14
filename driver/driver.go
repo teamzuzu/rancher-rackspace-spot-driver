@@ -134,6 +134,13 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 			},
 		},
 	}
+	defaults := defaultCredentialLoader(ctx)
+	if defaults.Org != "" {
+		flags.Options[flagOrganization].Default = &types.Default{DefaultString: defaults.Org}
+	}
+	if defaults.RefreshToken != "" {
+		flags.Options[flagRefreshToken].Default = &types.Default{DefaultString: defaults.RefreshToken}
+	}
 	return flags, nil
 }
 
@@ -206,7 +213,7 @@ func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterI
 
 	logrus.Infof("[%s] Create() started", driverName)
 
-	s, err := stateFromOptions(opts)
+	s, err := stateFromOptions(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
