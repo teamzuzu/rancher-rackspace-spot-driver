@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -97,7 +98,7 @@ type clusterState struct {
 	OnDemandPrice    string `json:"onDemandPricePerHour,omitempty"`
 }
 
-func stateFromOptions(opts *types.DriverOptions) (*clusterState, error) {
+func stateFromOptions(ctx context.Context, opts *types.DriverOptions) (*clusterState, error) {
 	s := &clusterState{
 		RefreshToken:      getStringOption(opts, flagRefreshToken, "rackspaceSpotRefreshToken"),
 		Organization:      getStringOption(opts, flagOrganization, "rackspaceSpotOrganization"),
@@ -129,6 +130,16 @@ func stateFromOptions(opts *types.DriverOptions) (*clusterState, error) {
 	if raw := getStringOption(opts, flagAdditionalSpotPools, "additionalSpotPools"); raw != "" {
 		if err := json.Unmarshal([]byte(raw), &s.AdditionalSpotPools); err != nil {
 			return nil, fmt.Errorf("failed to parse additional spot pools: %w", err)
+		}
+	}
+
+	if s.Organization == "" || s.RefreshToken == "" {
+		defaults := defaultCredentialLoader(ctx)
+		if s.Organization == "" {
+			s.Organization = defaults.Org
+		}
+		if s.RefreshToken == "" {
+			s.RefreshToken = defaults.RefreshToken
 		}
 	}
 

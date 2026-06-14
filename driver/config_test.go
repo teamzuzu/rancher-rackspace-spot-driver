@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -182,7 +183,7 @@ func TestStateFromOptionsAppliesDefaults(t *testing.T) {
 		IntOptions:  map[string]int64{},
 	}
 
-	state, err := stateFromOptions(opts)
+	state, err := stateFromOptions(context.Background(), opts)
 	if err != nil {
 		t.Fatalf("stateFromOptions() error = %v", err)
 	}
@@ -198,5 +199,82 @@ func TestStateFromOptionsAppliesDefaults(t *testing.T) {
 	}
 	if state.SpotNodeCount != int(defaultSpotCount) {
 		t.Fatalf("SpotNodeCount = %d, want %d", state.SpotNodeCount, defaultSpotCount)
+	}
+}
+
+func TestStateFromOptionsFillsFromSecret(t *testing.T) {
+	old := defaultCredentialLoader
+	defaultCredentialLoader = func(_ context.Context) credentialDefaults {
+		return credentialDefaults{Org: "secret-org", RefreshToken: "secret-token"}
+	}
+	defer func() { defaultCredentialLoader = old }()
+
+	opts := &types.DriverOptions{
+		StringOptions: map[string]string{
+			"rackspaceSpotRegion": "us-east-1",
+		},
+		BoolOptions: map[string]bool{},
+		IntOptions:  map[string]int64{},
+	}
+
+	state, err := stateFromOptions(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("stateFromOptions() error = %v", err)
+	}
+	if state.Organization != "secret-org" {
+		t.Fatalf("Organization = %q, want secret-org", state.Organization)
+	}
+	if state.RefreshToken != "secret-token" {
+		t.Fatalf("RefreshToken = %q, want secret-token", state.RefreshToken)
+	}
+}
+
+func TestStateFromOptionsExplicitValuesWinOverSecret(t *testing.T) {
+	old := defaultCredentialLoader
+	defaultCredentialLoader = func(_ context.Context) credentialDefaults {
+		return credentialDefaults{Org: "secret-org", RefreshToken: "secret-token"}
+	}
+	defer func() { defaultCredentialLoader = old }()
+
+	opts := &types.DriverOptions{
+		StringOptions: map[string]string{
+			"rackspaceSpotRefreshToken": "ui-token",
+			"rackspaceSpotOrganization": "ui-org",
+			"rackspaceSpotRegion":       "us-east-1",
+		},
+		BoolOptions: map[string]bool{},
+		IntOptions:  map[string]int64{},
+	}
+
+	state, err := stateFromOptions(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("stateFromOptions() error = %v", err)
+	}
+	if state.Organization != "ui-org" {
+		t.Fatalf("Organization = %q, want ui-org", state.Organization)
+	}
+	if state.RefreshToken != "ui-token" {
+		t.Fatalf("RefreshToken = %q, want ui-token", state.RefreshToken)
+	}
+}
+
+func TestStateFromOptionsNoSecretNoUIFailsValidation(t *testing.T) {
+	old := defaultCredentialLoader
+	defaultCredentialLoader = func(_ context.Context) credentialDefaults {
+		return credentialDefaults{}
+	}
+	defer func() { defaultCredentialLoader = old }()
+
+	opts := &types.DriverOptions{
+		StringOptions: map[string]string{
+			"rackspaceSpotRegion": "us-east-1",
+		},
+		BoolOptions: map[string]bool{},
+		IntOptions:  map[string]int64{},
+	}
+
+	_, err := stateFromOptions(context.Background(), opts)
+	if err == nil {
+		t.Fatal("stateFromOptions() should return error when org and token are missing")
 	}
 }
