@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	spotv1 "github.com/rackspace-spot/spot-go-sdk/api/v1"
 	"github.com/google/uuid"
+	spotv1 "github.com/rackspace-spot/spot-go-sdk/api/v1"
 	"github.com/rancher/kontainer-engine/types"
 	"github.com/sirupsen/logrus"
 )
@@ -260,13 +260,13 @@ func stateFromCloudspace(cs *spotv1.CloudSpace, org, token string) *clusterState
 
 	for i, p := range cs.SpotNodepools {
 		if i == 0 {
-			s.SpotPoolName    = p.Name
+			s.SpotPoolName = p.Name
 			s.SpotServerClass = p.ServerClass
-			s.SpotNodeCount   = p.Desired
-			s.SpotBidPrice    = p.BidPrice
+			s.SpotNodeCount = p.Desired
+			s.SpotBidPrice = p.BidPrice
 			s.SpotAutoscaling = p.Autoscaling.Enabled
-			s.SpotMinNodes    = p.Autoscaling.MinNodes
-			s.SpotMaxNodes    = p.Autoscaling.MaxNodes
+			s.SpotMinNodes = p.Autoscaling.MinNodes
+			s.SpotMaxNodes = p.Autoscaling.MaxNodes
 		} else {
 			s.AdditionalSpotPools = append(s.AdditionalSpotPools, SpotPoolConfig{
 				Name:        p.Name,
@@ -282,11 +282,11 @@ func stateFromCloudspace(cs *spotv1.CloudSpace, org, token string) *clusterState
 
 	if len(cs.OnDemandNodePools) > 0 {
 		p := cs.OnDemandNodePools[0]
-		s.OnDemandEnabled  = true
+		s.OnDemandEnabled = true
 		s.OnDemandPoolName = p.Name
-		s.OnDemandClass    = p.ServerClass
-		s.OnDemandCount    = p.Desired
-		s.OnDemandPrice    = p.OnDemandPricePerHour
+		s.OnDemandClass = p.ServerClass
+		s.OnDemandCount = p.Desired
+		s.OnDemandPrice = p.OnDemandPricePerHour
 	}
 
 	return s

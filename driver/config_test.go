@@ -160,7 +160,7 @@ func TestMergeStatePreservesTokenWhenAbsentFromOpts(t *testing.T) {
 func TestValidateRejectsMultipleAutoscalingPools(t *testing.T) {
 	state := &clusterState{
 		RefreshToken:    "token",
-		Organization:   "org",
+		Organization:    "org",
 		Region:          "us-east-1",
 		SpotAutoscaling: true,
 		AdditionalSpotPools: []SpotPoolConfig{
@@ -209,7 +209,7 @@ func TestStateFromCloudspace_fullConfig(t *testing.T) {
 		Desired:     3,
 		BidPrice:    "0.05",
 	}
-	p0.Autoscaling.Enabled  = true
+	p0.Autoscaling.Enabled = true
 	p0.Autoscaling.MinNodes = 2
 	p0.Autoscaling.MaxNodes = 8
 
