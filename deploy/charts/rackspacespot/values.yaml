@@ -15,7 +15,6 @@ uiPlugin:
 #     --from-literal=org=my-rackspace-org \
 #     --from-literal=refreshToken=eyJ...
 credentials:
-  secretName: ""                   # name of an existing Secret; leave blank to disable
-  namespace: "cattle-system"       # namespace containing the Secret
-  orgKey: "org"                    # key name for the org name
-  refreshTokenKey: "refreshToken"  # key name for the refresh token
+  # Name of an existing Secret in namespace cattle-system with keys "org" and "refreshToken".
+  # Leave empty to disable. The driver and RBAC namespace are hardcoded to cattle-system.
+  secretName: ""
