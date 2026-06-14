@@ -3,18 +3,3 @@ kontainerDriver:
   checksum: "7aa869796b03a6da1fab185aabf7d0e0a6e62967aa68b6a109986d7fa066647d"
 uiPlugin:
   endpoint: "https://teamzuzu.github.io/rancher-rackspace-spot-driver/extensions/rackspacespot/0.1.3"
-
-# credentials configures optional pre-provisioned defaults for the Rackspace Spot org name
-# and refresh token. Create a Secret with the keys below, then set secretName. The driver
-# reads the Secret at runtime via Rancher's in-cluster service account; this chart creates
-# the required RBAC. Leave secretName empty (the default) to disable this feature.
-#
-# Example secret:
-#   kubectl create secret generic rackspace-spot-credentials \
-#     --namespace cattle-system \
-#     --from-literal=org=my-rackspace-org \
-#     --from-literal=refreshToken=eyJ...
-credentials:
-  # Name of an existing Secret in namespace cattle-system with keys "org" and "refreshToken".
-  # Leave empty to disable. The driver and RBAC namespace are hardcoded to cattle-system.
-  secretName: ""
