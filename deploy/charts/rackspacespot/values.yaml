@@ -1,8 +1,8 @@
 kontainerDriver:
-  url: "https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/download/v0.1.2/rancher-rackspace-spot-driver_linux_amd64.tar.gz"
-  checksum: "51f8c893044a6ea588c7b0f44a0f4653023294f6e4c40387c6efa571f4e4cd02"
+  url: "https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/download/v0.1.3/rancher-rackspace-spot-driver_linux_amd64.tar.gz"
+  checksum: "7aa869796b03a6da1fab185aabf7d0e0a6e62967aa68b6a109986d7fa066647d"
 uiPlugin:
-  endpoint: "https://teamzuzu.github.io/rancher-rackspace-spot-driver/extensions/rackspacespot/0.1.2"
+  endpoint: "https://teamzuzu.github.io/rancher-rackspace-spot-driver/extensions/rackspacespot/0.1.3"
 
 # credentials configures optional pre-provisioned defaults for the Rackspace Spot org name
 # and refresh token. Create a Secret with the keys below, then set secretName. The driver
