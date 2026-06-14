@@ -3,6 +3,7 @@ vendor/
 *.test
 *.out
 .env
+*superpowers*
 
 # UI extension build artifacts
 ui/node_modules/
