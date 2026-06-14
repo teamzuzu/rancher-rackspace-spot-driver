@@ -329,6 +329,17 @@ func TestStateFromCloudspace_noOnDemand(t *testing.T) {
 	}
 }
 
+func TestStateFromCloudspace_setsImportedFlag(t *testing.T) {
+	cs := &spotv1.CloudSpace{
+		Name:   "cs",
+		Region: "us-east-iad-1",
+	}
+	s := stateFromCloudspace(cs, "org", "tok")
+	if !s.Imported {
+		t.Fatal("Imported = false, want true")
+	}
+}
+
 func TestStateFromCloudspace_singleSpotPool(t *testing.T) {
 	cs := &spotv1.CloudSpace{
 		Name:          "cs",

@@ -298,11 +298,13 @@ func (d *Driver) importCluster(ctx context.Context, opts *types.DriverOptions, c
 
 	client, err := newSpotClient(ctx, token, org)
 	if err != nil {
+		logrus.Errorf("[%s] importCluster: authentication failed: %v", driverName, err)
 		return nil, err
 	}
 
 	s, err := client.importCloudspace(ctx, org, cloudspaceName, token)
 	if err != nil {
+		logrus.Errorf("[%s] importCluster: %v", driverName, err)
 		return nil, err
 	}
 
@@ -314,8 +316,12 @@ func (d *Driver) importCluster(ctx context.Context, opts *types.DriverOptions, c
 		return info, err
 	}
 
+	poolCount := len(s.AdditionalSpotPools)
+	if s.SpotPoolName != "" {
+		poolCount++
+	}
 	logrus.Infof("[%s] imported cloudspace %s (region: %s, k8s: %s, spot pools: %d)",
-		driverName, cloudspaceName, s.Region, s.KubernetesVersion, 1+len(s.AdditionalSpotPools))
+		driverName, cloudspaceName, s.Region, s.KubernetesVersion, poolCount)
 
 	return info, nil
 }
@@ -404,6 +410,11 @@ func (d *Driver) Remove(ctx context.Context, clusterInfo *types.ClusterInfo) err
 
 	if s.CloudspaceName == "" {
 		logrus.Warnf("[%s] no cloudspace name in state, nothing to remove", driverName)
+		return nil
+	}
+
+	if s.Imported {
+		logrus.Infof("[%s] cloudspace %s was imported; skipping deletion", driverName, s.CloudspaceName)
 		return nil
 	}
 

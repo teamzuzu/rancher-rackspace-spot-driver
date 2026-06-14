@@ -69,6 +69,9 @@ type clusterState struct {
 	// Cluster identity
 	CloudspaceName string `json:"cloudspaceName"`
 	Region         string `json:"region"`
+	// Imported is true when this cluster was imported (not created) by the driver.
+	// Remove() skips cloudspace deletion for imported clusters.
+	Imported bool `json:"imported,omitempty"`
 
 	// Cluster config
 	KubernetesVersion string `json:"kubernetesVersion"`
@@ -252,6 +255,7 @@ func stateFromCloudspace(cs *spotv1.CloudSpace, org, token string) *clusterState
 		Organization:      org,
 		CloudspaceName:    cs.Name,
 		Region:            cs.Region,
+		Imported:          true,
 		KubernetesVersion: cs.KubernetesVersion,
 		CNI:               cs.CNI,
 		GPUEnabled:        cs.GpuEnabled,
