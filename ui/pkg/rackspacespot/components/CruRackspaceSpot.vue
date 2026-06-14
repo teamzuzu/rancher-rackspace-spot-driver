@@ -452,6 +452,24 @@ export default defineComponent({
     },
   },
 
+  async created() {
+    if (this.mode !== 'create') return;
+    try {
+      const secret = await this.$store.dispatch('management/find', {
+        type: 'secret',
+        id:   'cattle-system/rackspace-spot-credentials',
+      });
+      if (!this.config.rackspaceSpotOrganization && secret?.data?.org) {
+        this.config.rackspaceSpotOrganization = atob(secret.data.org);
+      }
+      if (!this.config.rackspaceSpotRefreshToken && secret?.data?.refreshToken) {
+        this.config.rackspaceSpotRefreshToken = atob(secret.data.refreshToken);
+      }
+    } catch (_) {
+      // Secret absent or no permission — silent fallback, fields stay blank
+    }
+  },
+
   watch: {
     'config.rackspaceSpotRegion'(newRegion, oldRegion) {
       if (this.mode === 'edit' || newRegion === oldRegion) return;
