@@ -10,10 +10,12 @@ import (
 )
 
 // importMockAPI is a minimal spotAPI implementation for import tests.
-// Only GetCloudspace and CreateSpotNodePool are non-trivial.
+// GetCloudspace is configured via fields to simulate not-found or an API error.
+// CreateSpotNodePool is tracked to verify importCloudspace makes no mutations.
 type importMockAPI struct {
 	cloudspace  *spotv1.CloudSpace
 	notFound    bool
+	apiErr      error
 	createCalls []string
 }
 
@@ -21,6 +23,9 @@ func (m *importMockAPI) Authenticate(_ context.Context) (string, error) { return
 func (m *importMockAPI) GetCloudspace(_ context.Context, _, _ string) (*spotv1.CloudSpace, error) {
 	if m.notFound {
 		return nil, fmt.Errorf("cloudspace not found")
+	}
+	if m.apiErr != nil {
+		return nil, m.apiErr
 	}
 	return m.cloudspace, nil
 }
@@ -93,5 +98,17 @@ func TestImportCloudspace_success(t *testing.T) {
 	}
 	if len(mock.createCalls) != 0 {
 		t.Fatalf("unexpected CreateSpotNodePool calls: %v", mock.createCalls)
+	}
+}
+
+func TestImportCloudspace_apiError(t *testing.T) {
+	mock := &importMockAPI{apiErr: fmt.Errorf("connection refused")}
+	client := &spotClient{api: mock, org: "org"}
+	_, err := client.importCloudspace(context.Background(), "org", "my-cluster", "tok")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "connection refused") {
+		t.Fatalf("error = %q, want it to contain the original error message", err.Error())
 	}
 }
