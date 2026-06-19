@@ -64,52 +64,54 @@
       </div>
     </div>
 
-    <!-- ── Cluster ─────────────────────────────────────────── -->
-    <h3 class="mt-20">Cluster</h3>
-    <div class="row">
-      <div class="col span-4">
-        <LabeledSelect
-          v-model:value="config.rackspaceSpotRegion"
-          label="Region"
-          :options="regionOptions"
-          :required="true"
-          :mode="mode === 'edit' ? 'view' : mode"
-        />
+    <!-- ── Cluster (hidden in import mode — values are read from the existing cloudspace) ── -->
+    <template v-if="!config.importExistingCluster">
+      <h3 class="mt-20">Cluster</h3>
+      <div class="row">
+        <div class="col span-4">
+          <LabeledSelect
+            v-model:value="config.rackspaceSpotRegion"
+            label="Region"
+            :options="regionOptions"
+            :required="true"
+            :mode="mode === 'edit' ? 'view' : mode"
+          />
+        </div>
+        <div class="col span-4">
+          <LabeledSelect
+            v-model:value="config.kubernetesVersion"
+            label="Kubernetes Version"
+            :options="k8sVersionOptions"
+            :mode="mode === 'edit' ? 'view' : mode"
+          />
+        </div>
+        <div class="col span-4">
+          <LabeledSelect
+            v-model:value="config.cni"
+            label="CNI"
+            :options="cniOptions"
+            :mode="mode === 'edit' ? 'view' : mode"
+          />
+        </div>
       </div>
-      <div class="col span-4">
-        <LabeledSelect
-          v-model:value="config.kubernetesVersion"
-          label="Kubernetes Version"
-          :options="k8sVersionOptions"
-          :mode="mode === 'edit' ? 'view' : mode"
-        />
+      <div class="row mt-10">
+        <div class="col span-4">
+          <LabeledInput
+            v-model:value="config.preemptionWebhookUrl"
+            label="Preemption Webhook URL"
+            placeholder="https://..."
+            :mode="mode"
+          />
+        </div>
+        <div class="col span-4">
+          <Checkbox
+            v-model:value="config.gpuEnabled"
+            label="Enable GPU support"
+            :mode="mode === 'edit' ? 'view' : mode"
+          />
+        </div>
       </div>
-      <div class="col span-4">
-        <LabeledSelect
-          v-model:value="config.cni"
-          label="CNI"
-          :options="cniOptions"
-          :mode="mode === 'edit' ? 'view' : mode"
-        />
-      </div>
-    </div>
-    <div class="row mt-10">
-      <div class="col span-4">
-        <LabeledInput
-          v-model:value="config.preemptionWebhookUrl"
-          label="Preemption Webhook URL"
-          placeholder="https://..."
-          :mode="mode"
-        />
-      </div>
-      <div class="col span-4">
-        <Checkbox
-          v-model:value="config.gpuEnabled"
-          label="Enable GPU support"
-          :mode="mode === 'edit' ? 'view' : mode"
-        />
-      </div>
-    </div>
+    </template>
     <!-- ── Node pools (hidden in import mode) ───────────── -->
     <template v-if="!config.importExistingCluster">
       <!-- ── Spot Node Pools ───────────────────────────────── -->
