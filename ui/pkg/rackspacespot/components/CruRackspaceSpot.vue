@@ -52,6 +52,7 @@
     <!-- ── Import mode ───────────────────────────────────────── -->
     <div class="row mt-20">
       <div class="col span-12">
+        <!-- mode forced to 'view' in edit mode: import is a one-time create-time action -->
         <Checkbox
           v-model:value="config.importExistingCluster"
           label="Import existing cluster"
