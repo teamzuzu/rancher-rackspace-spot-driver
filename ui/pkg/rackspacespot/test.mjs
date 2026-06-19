@@ -110,5 +110,60 @@ test('same count for every region', () => {
   });
 });
 
+// Mirror of the save() validation logic in CruRackspaceSpot.vue.
+// Returns an error message string, or null if valid.
+function validateConfig(clusterName, config, autoscalingPoolCount) {
+  if (!clusterName) return 'Cluster Name is required';
+  if (!config.rackspaceSpotRefreshToken) return 'Refresh Token is required';
+  if (!config.rackspaceSpotOrganization) return 'Organization is required';
+  if (!config.importExistingCluster) {
+    if (config.onDemandEnabled && !config.onDemandServerClass) {
+      return 'On-Demand Server Class is required when the on-demand pool is enabled';
+    }
+    if (autoscalingPoolCount > 1) {
+      return 'Only one spot node pool may have autoscaling enabled per cloudspace (API limit).';
+    }
+  }
+  return null;
+}
+
+console.log('\nimport mode validation:');
+test('import mode skips on-demand server class check', () => {
+  const err = validateConfig('my-cluster', {
+    rackspaceSpotRefreshToken: 'tok',
+    rackspaceSpotOrganization: 'org',
+    onDemandEnabled:           true,
+    onDemandServerClass:       '',
+    importExistingCluster:     true,
+  }, 0);
+  assert.equal(err, null);
+});
+test('normal mode requires on-demand server class when enabled', () => {
+  const err = validateConfig('my-cluster', {
+    rackspaceSpotRefreshToken: 'tok',
+    rackspaceSpotOrganization: 'org',
+    onDemandEnabled:           true,
+    onDemandServerClass:       '',
+    importExistingCluster:     false,
+  }, 0);
+  assert.ok(err !== null && err.includes('On-Demand'), `expected On-Demand error, got: ${err}`);
+});
+test('import mode skips autoscaling pool count check', () => {
+  const err = validateConfig('my-cluster', {
+    rackspaceSpotRefreshToken: 'tok',
+    rackspaceSpotOrganization: 'org',
+    importExistingCluster:     true,
+  }, 2);
+  assert.equal(err, null);
+});
+test('normal mode rejects multiple autoscaling pools', () => {
+  const err = validateConfig('my-cluster', {
+    rackspaceSpotRefreshToken: 'tok',
+    rackspaceSpotOrganization: 'org',
+    importExistingCluster:     false,
+  }, 2);
+  assert.ok(err !== null && err.includes('autoscaling'), `expected autoscaling error, got: ${err}`);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
