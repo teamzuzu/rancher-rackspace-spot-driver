@@ -68,8 +68,9 @@ type clusterState struct {
 	Organization string `json:"organization"`
 
 	// Cluster identity
-	CloudspaceName string `json:"cloudspaceName"`
-	Region         string `json:"region"`
+	CloudspaceName   string `json:"cloudspaceName"`
+	Region           string `json:"region"`
+	RancherClusterID string `json:"rancherClusterId,omitempty"`
 	// Imported is true when this cluster was imported (not created) by the driver.
 	// Remove() skips cloudspace deletion for imported clusters.
 	Imported bool `json:"imported,omitempty"`

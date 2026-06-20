@@ -313,6 +313,9 @@ func (d *Driver) importCluster(ctx context.Context, opts *types.DriverOptions, c
 		return nil, err
 	}
 
+	// Store the Rancher-internal cluster ID so PostCheck can sync genericEngineConfig.
+	s.RancherClusterID = opts.StringOptions["name"]
+
 	info := clusterInfo
 	if info == nil {
 		info = &types.ClusterInfo{}
@@ -401,6 +404,12 @@ func (d *Driver) PostCheck(ctx context.Context, clusterInfo *types.ClusterInfo) 
 
 	if err := ensureRancherServiceAccount(ctx, kubeconfig, clusterInfo); err != nil {
 		return clusterInfo, err
+	}
+
+	// After a successful import, patch genericEngineConfig so the edit form shows
+	// actual pool values instead of the defaults that were submitted by the create form.
+	if s.Imported {
+		syncGenericEngineConfig(ctx, s)
 	}
 
 	return clusterInfo, nil
