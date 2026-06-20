@@ -49,103 +49,94 @@
       </div>
     </div>
 
-    <!-- ── Cluster ─────────────────────────────────────────── -->
-    <h3 class="mt-20">Cluster</h3>
-    <div class="row">
-      <div class="col span-4">
-        <LabeledSelect
-          v-model:value="config.rackspaceSpotRegion"
-          label="Region"
-          :options="regionOptions"
-          :required="true"
-          :mode="mode === 'edit' ? 'view' : mode"
-        />
-      </div>
-      <div class="col span-4">
-        <LabeledSelect
-          v-model:value="config.kubernetesVersion"
-          label="Kubernetes Version"
-          :options="k8sVersionOptions"
-          :mode="mode === 'edit' ? 'view' : mode"
-        />
-      </div>
-      <div class="col span-4">
-        <LabeledSelect
-          v-model:value="config.cni"
-          label="CNI"
-          :options="cniOptions"
-          :mode="mode === 'edit' ? 'view' : mode"
-        />
-      </div>
-    </div>
-    <div class="row mt-10">
-      <div class="col span-4">
-        <LabeledInput
-          v-model:value="config.preemptionWebhookUrl"
-          label="Preemption Webhook URL"
-          placeholder="https://..."
-          :mode="mode"
-        />
-      </div>
-      <div class="col span-4">
+    <!-- ── Import mode ───────────────────────────────────────── -->
+    <div class="row mt-20">
+      <div class="col span-12">
+        <!-- mode forced to 'view' in edit mode: import is a one-time create-time action -->
         <Checkbox
-          v-model:value="config.gpuEnabled"
-          label="Enable GPU support"
+          v-model:value="config.importExistingCluster"
+          label="Import existing cluster"
           :mode="mode === 'edit' ? 'view' : mode"
         />
+        <p v-if="config.importExistingCluster" class="import-note mt-5">
+          Node pool configuration will be read from the existing cloudspace after import.
+        </p>
       </div>
     </div>
-    <!-- ── Spot Node Pools ───────────────────────────────── -->
-    <h3 class="mt-20">Spot Node Pools</h3>
-    <a href="https://tombojer.github.io/spot-cost-analyzer/" target="_blank" rel="noopener" class="spot-cost-link">Estimate costs with the Spot Cost Analyzer ↗</a>
 
-    <!-- ── Primary spot pool ─────────────────────────────── -->
-    <div class="pool-card mt-15">
-      <div class="pool-card-header">
-        <span class="pool-label">Pool 1 (primary)</span>
-      </div>
-      <div class="row mt-10">
+    <!-- ── Cluster (hidden in import mode — values are read from the existing cloudspace) ── -->
+    <template v-if="!config.importExistingCluster">
+      <h3 class="mt-20">Cluster</h3>
+      <div class="row">
         <div class="col span-4">
           <LabeledSelect
-            v-model:value="config.spotServerClass"
-            label="Server Class"
-            :options="serverClassOptions"
-            :taggable="true"
-            :mode="mode"
+            v-model:value="config.rackspaceSpotRegion"
+            label="Region"
+            :options="regionOptions"
+            :required="true"
+            :mode="mode === 'edit' ? 'view' : mode"
           />
         </div>
         <div class="col span-4">
-          <LabeledInput
-            v-model:value="config.spotNodeCount"
-            label="Node Count"
-            type="number"
-            :min="0"
-            :mode="mode"
+          <LabeledSelect
+            v-model:value="config.kubernetesVersion"
+            label="Kubernetes Version"
+            :options="k8sVersionOptions"
+            :mode="mode === 'edit' ? 'view' : mode"
           />
         </div>
         <div class="col span-4">
-          <LabeledInput
-            v-model:value="config.spotBidPrice"
-            label="Bid Price (USD/hr)"
-            placeholder="0.01"
-            :mode="mode"
+          <LabeledSelect
+            v-model:value="config.cni"
+            label="CNI"
+            :options="cniOptions"
+            :mode="mode === 'edit' ? 'view' : mode"
           />
         </div>
       </div>
       <div class="row mt-10">
         <div class="col span-4">
-          <Checkbox
-            v-model:value="config.spotAutoscalingEnabled"
-            :label="primaryAutoscalingDisabled ? 'Enable Autoscaling (another pool has autoscaling)' : 'Enable Autoscaling'"
-            :disabled="primaryAutoscalingDisabled"
+          <LabeledInput
+            v-model:value="config.preemptionWebhookUrl"
+            label="Preemption Webhook URL"
+            placeholder="https://..."
             :mode="mode"
           />
         </div>
-        <template v-if="config.spotAutoscalingEnabled">
+        <div class="col span-4">
+          <Checkbox
+            v-model:value="config.gpuEnabled"
+            label="Enable GPU support"
+            :mode="mode === 'edit' ? 'view' : mode"
+          />
+        </div>
+      </div>
+    </template>
+    <!-- ── Node pools (hidden in import mode) ───────────── -->
+    <template v-if="!config.importExistingCluster">
+      <!-- ── Spot Node Pools ───────────────────────────────── -->
+      <h3 class="mt-20">Spot Node Pools</h3>
+      <a href="https://tombojer.github.io/spot-cost-analyzer/" target="_blank" rel="noopener" class="spot-cost-link">Estimate costs with the Spot Cost Analyzer ↗</a>
+
+      <!-- ── Primary spot pool ─────────────────────────────── -->
+      <div class="pool-card mt-15">
+        <div class="pool-card-header">
+          <span class="pool-label">Pool 1 (primary)</span>
+        </div>
+        <div class="row mt-10">
+          <div class="col span-4">
+            <LabeledSelect
+              v-model:value="config.spotServerClass"
+              label="Server Class"
+              :options="serverClassOptions"
+              :taggable="true"
+              :mode="mode"
+            />
+          </div>
           <div class="col span-4">
             <LabeledInput
-              v-model:value="config.spotAutoscalingMinNodes"
-              label="Min Nodes"
+              v-model:value="config.spotNodeCount"
+              label="Node Count"
               type="number"
               :min="0"
               :mode="mode"
@@ -153,75 +144,157 @@
           </div>
           <div class="col span-4">
             <LabeledInput
-              v-model:value="config.spotAutoscalingMaxNodes"
-              label="Max Nodes"
-              type="number"
-              :min="1"
+              v-model:value="config.spotBidPrice"
+              label="Bid Price (USD/hr)"
+              placeholder="0.01"
               :mode="mode"
             />
           </div>
-        </template>
+        </div>
+        <div class="row mt-10">
+          <div class="col span-4">
+            <Checkbox
+              v-model:value="config.spotAutoscalingEnabled"
+              :label="primaryAutoscalingDisabled ? 'Enable Autoscaling (another pool has autoscaling)' : 'Enable Autoscaling'"
+              :disabled="primaryAutoscalingDisabled"
+              :mode="mode"
+            />
+          </div>
+          <template v-if="config.spotAutoscalingEnabled">
+            <div class="col span-4">
+              <LabeledInput
+                v-model:value="config.spotAutoscalingMinNodes"
+                label="Min Nodes"
+                type="number"
+                :min="0"
+                :mode="mode"
+              />
+            </div>
+            <div class="col span-4">
+              <LabeledInput
+                v-model:value="config.spotAutoscalingMaxNodes"
+                label="Max Nodes"
+                type="number"
+                :min="1"
+                :mode="mode"
+              />
+            </div>
+          </template>
+        </div>
       </div>
-    </div>
 
-    <!-- ── Additional spot pools ─────────────────────────── -->
-    <div
-      v-for="(pool, idx) in additionalSpotPools"
-      :key="idx"
-      class="pool-card mt-10"
-    >
-      <div class="pool-card-header">
-        <span class="pool-label">Pool {{ idx + 2 }}</span>
+      <!-- ── Additional spot pools ─────────────────────────── -->
+      <div
+        v-for="(pool, idx) in additionalSpotPools"
+        :key="idx"
+        class="pool-card mt-10"
+      >
+        <div class="pool-card-header">
+          <span class="pool-label">Pool {{ idx + 2 }}</span>
+          <button
+            class="btn btn-sm btn-danger"
+            type="button"
+            @click="removeSpotPool(idx)"
+          >
+            Remove
+          </button>
+        </div>
+        <div class="row mt-10">
+          <div class="col span-4">
+            <LabeledSelect
+              v-model:value="pool.serverClass"
+              label="Server Class"
+              :options="serverClassOptions"
+              :taggable="true"
+              :mode="mode"
+            />
+          </div>
+          <div class="col span-4">
+            <LabeledInput
+              v-model:value="pool.nodeCount"
+              label="Node Count"
+              type="number"
+              :min="0"
+              :mode="mode"
+            />
+          </div>
+          <div class="col span-4">
+            <LabeledInput
+              v-model:value="pool.bidPrice"
+              label="Bid Price (USD/hr)"
+              placeholder="0.01"
+              :mode="mode"
+            />
+          </div>
+        </div>
+        <div class="row mt-10">
+          <div class="col span-4">
+            <Checkbox
+              v-model:value="pool.autoscaling"
+              :label="autoscalingPoolCount >= 1 && !pool.autoscaling ? 'Enable Autoscaling (another pool has autoscaling)' : 'Enable Autoscaling'"
+              :disabled="autoscalingPoolCount >= 1 && !pool.autoscaling"
+              :mode="mode"
+            />
+          </div>
+          <template v-if="pool.autoscaling">
+            <div class="col span-4">
+              <LabeledInput
+                v-model:value="pool.minNodes"
+                label="Min Nodes"
+                type="number"
+                :min="0"
+                :mode="mode"
+              />
+            </div>
+            <div class="col span-4">
+              <LabeledInput
+                v-model:value="pool.maxNodes"
+                label="Max Nodes"
+                type="number"
+                :min="1"
+                :mode="mode"
+              />
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="mt-10">
         <button
-          class="btn btn-sm btn-danger"
+          class="btn btn-sm btn-primary"
           type="button"
-          @click="removeSpotPool(idx)"
+          @click="addSpotPool"
         >
-          Remove
+          + Add Spot Pool
         </button>
       </div>
-      <div class="row mt-10">
-        <div class="col span-4">
-          <LabeledSelect
-            v-model:value="pool.serverClass"
-            label="Server Class"
-            :options="serverClassOptions"
-            :taggable="true"
-            :mode="mode"
-          />
-        </div>
-        <div class="col span-4">
-          <LabeledInput
-            v-model:value="pool.nodeCount"
-            label="Node Count"
-            type="number"
-            :min="0"
-            :mode="mode"
-          />
-        </div>
-        <div class="col span-4">
-          <LabeledInput
-            v-model:value="pool.bidPrice"
-            label="Bid Price (USD/hr)"
-            placeholder="0.01"
+
+      <!-- ── On-Demand Node Pool ─────────────────────────────── -->
+      <h3 class="mt-20">On-Demand Node Pool</h3>
+      <div class="row">
+        <div class="col span-12">
+          <Checkbox
+            v-model:value="config.onDemandEnabled"
+            label="Add stable capacity alongside spot nodes"
             :mode="mode"
           />
         </div>
       </div>
-      <div class="row mt-10">
-        <div class="col span-4">
-          <Checkbox
-            v-model:value="pool.autoscaling"
-            :label="autoscalingPoolCount >= 1 && !pool.autoscaling ? 'Enable Autoscaling (another pool has autoscaling)' : 'Enable Autoscaling'"
-            :disabled="autoscalingPoolCount >= 1 && !pool.autoscaling"
-            :mode="mode"
-          />
-        </div>
-        <template v-if="pool.autoscaling">
+      <template v-if="config.onDemandEnabled">
+        <div class="row mt-10">
+          <div class="col span-4">
+            <LabeledSelect
+              v-model:value="config.onDemandServerClass"
+              label="Server Class"
+              :options="serverClassOptions"
+              :taggable="true"
+              :mode="mode"
+            />
+          </div>
           <div class="col span-4">
             <LabeledInput
-              v-model:value="pool.minNodes"
-              label="Min Nodes"
+              v-model:value="config.onDemandNodeCount"
+              label="Node Count"
               type="number"
               :min="0"
               :mode="mode"
@@ -229,67 +302,14 @@
           </div>
           <div class="col span-4">
             <LabeledInput
-              v-model:value="pool.maxNodes"
-              label="Max Nodes"
-              type="number"
-              :min="1"
+              v-model:value="config.onDemandPricePerHour"
+              label="Price Per Hour (USD)"
+              placeholder="0.00"
               :mode="mode"
             />
           </div>
-        </template>
-      </div>
-    </div>
-
-    <div class="mt-10">
-      <button
-        class="btn btn-sm btn-primary"
-        type="button"
-        @click="addSpotPool"
-      >
-        + Add Spot Pool
-      </button>
-    </div>
-
-    <!-- ── On-Demand Node Pool ─────────────────────────────── -->
-    <h3 class="mt-20">On-Demand Node Pool</h3>
-    <div class="row">
-      <div class="col span-12">
-        <Checkbox
-          v-model:value="config.onDemandEnabled"
-          label="Add stable capacity alongside spot nodes"
-          :mode="mode"
-        />
-      </div>
-    </div>
-    <template v-if="config.onDemandEnabled">
-      <div class="row mt-10">
-        <div class="col span-4">
-          <LabeledSelect
-            v-model:value="config.onDemandServerClass"
-            label="Server Class"
-            :options="serverClassOptions"
-            :taggable="true"
-            :mode="mode"
-          />
         </div>
-        <div class="col span-4">
-          <LabeledInput
-            v-model:value="config.onDemandNodeCount"
-            label="Node Count"
-            type="number"
-            :min="0"
-            :mode="mode"
-          />
-        </div>
-        <div class="col span-4">
-          <LabeledInput
-            v-model:value="config.onDemandPricePerHour"
-            label="Price Per Hour (USD)"
-            placeholder="0.00"
-            :mode="mode"
-          />
-        </div>
-      </div>
+      </template>
     </template>
   </CruResource>
 </template>
@@ -310,6 +330,7 @@ const DEFAULTS = {
   kubernetesVersion:       '1.33.0',
   cni:                     'calico',
   gpuEnabled:              false,
+  importExistingCluster:   false,
   spotServerClass:         'gp.vs1.medium-iad',
   spotNodeCount:           3,
   spotBidPrice:            '0.01',
@@ -506,15 +527,17 @@ export default defineComponent({
         if (btnCb) btnCb(false);
         return;
       }
-      if (this.config.onDemandEnabled && !this.config.onDemandServerClass) {
-        this.errors = ['On-Demand Server Class is required when the on-demand pool is enabled'];
-        if (btnCb) btnCb(false);
-        return;
-      }
-      if (this.autoscalingPoolCount > 1) {
-        this.errors = ['Only one spot node pool may have autoscaling enabled per cloudspace (API limit).'];
-        if (btnCb) btnCb(false);
-        return;
+      if (!this.config.importExistingCluster) {
+        if (this.config.onDemandEnabled && !this.config.onDemandServerClass) {
+          this.errors = ['On-Demand Server Class is required when the on-demand pool is enabled'];
+          if (btnCb) btnCb(false);
+          return;
+        }
+        if (this.autoscalingPoolCount > 1) {
+          this.errors = ['Only one spot node pool may have autoscaling enabled per cloudspace (API limit).'];
+          if (btnCb) btnCb(false);
+          return;
+        }
       }
 
       try {
@@ -587,4 +610,8 @@ export default defineComponent({
 .mb-20 { margin-bottom: 20px; }
 .spot-cost-link { font-size: 0.85em; color: var(--primary); text-decoration: none; }
 .spot-cost-link:hover { text-decoration: underline; }
+.import-note {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
 </style>

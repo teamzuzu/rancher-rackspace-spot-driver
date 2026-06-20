@@ -301,6 +301,19 @@ func (c *spotClient) waitForCloudspace(ctx context.Context, name, desiredStatus 
 	}
 }
 
+// importCloudspace reads an existing cloudspace from the Spot API and returns
+// its config as a clusterState. No infrastructure changes are made.
+func (c *spotClient) importCloudspace(ctx context.Context, org, cloudspaceName, token string) (*clusterState, error) {
+	cs, err := c.api.GetCloudspace(ctx, org, cloudspaceName)
+	if err != nil {
+		if isNotFound(err) {
+			return nil, fmt.Errorf("cloudspace %q not found: use create mode to provision a new cluster", cloudspaceName)
+		}
+		return nil, fmt.Errorf("failed to look up cloudspace %q: %w", cloudspaceName, err)
+	}
+	return stateFromCloudspace(cs, org, token), nil
+}
+
 // nodeTotalCount returns the sum of desired nodes across all pools.
 func nodeTotalCount(cs *spotv1.CloudSpace) int64 {
 	var total int64

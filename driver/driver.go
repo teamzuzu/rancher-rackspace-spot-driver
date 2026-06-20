@@ -132,6 +132,11 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 				Type:  types.StringType,
 				Usage: "JSON array of additional spot node pool configurations",
 			},
+			flagImportExisting: {
+				Type:    types.BoolType,
+				Usage:   "Import an existing Rackspace Spot cloudspace instead of creating a new one",
+				Default: &types.Default{DefaultBool: false},
+			},
 		},
 	}
 	return flags, nil
@@ -206,6 +211,10 @@ func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterI
 
 	logrus.Infof("[%s] Create() started", driverName)
 
+	if getBoolOption(opts, flagImportExisting, "importExistingCluster") {
+		return d.importCluster(ctx, opts, clusterInfo)
+	}
+
 	s, err := stateFromOptions(opts)
 	if err != nil {
 		return nil, err
@@ -263,6 +272,57 @@ func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterI
 	}
 
 	logrus.Infof("[%s] Create() completed successfully", driverName)
+	return info, nil
+}
+
+func (d *Driver) importCluster(ctx context.Context, opts *types.DriverOptions, clusterInfo *types.ClusterInfo) (*types.ClusterInfo, error) {
+	org := getStringOption(opts, flagOrganization, "rackspaceSpotOrganization")
+	token := getStringOption(opts, flagRefreshToken, "rackspaceSpotRefreshToken")
+	if org == "" {
+		return nil, fmt.Errorf("%s is required", flagOrganization)
+	}
+	if token == "" {
+		return nil, fmt.Errorf("%s is required", flagRefreshToken)
+	}
+
+	rawName := opts.StringOptions["name"]
+	cloudspaceName, err := sanitizeResourceName(rawName)
+	if err != nil {
+		return nil, fmt.Errorf("invalid cluster name: %w", err)
+	}
+	if cloudspaceName == "" {
+		return nil, fmt.Errorf("cluster name is required")
+	}
+
+	logrus.Infof("[%s] importing cloudspace %q (org: %s)", driverName, cloudspaceName, org)
+
+	client, err := newSpotClient(ctx, token, org)
+	if err != nil {
+		logrus.Errorf("[%s] importCluster: authentication failed: %v", driverName, err)
+		return nil, err
+	}
+
+	s, err := client.importCloudspace(ctx, org, cloudspaceName, token)
+	if err != nil {
+		logrus.Errorf("[%s] importCluster: %v", driverName, err)
+		return nil, err
+	}
+
+	info := clusterInfo
+	if info == nil {
+		info = &types.ClusterInfo{}
+	}
+	if err := s.save(info); err != nil {
+		return info, err
+	}
+
+	poolCount := len(s.AdditionalSpotPools)
+	if s.SpotPoolName != "" {
+		poolCount++
+	}
+	logrus.Infof("[%s] imported cloudspace %s (region: %s, k8s: %s, spot pools: %d)",
+		driverName, cloudspaceName, s.Region, s.KubernetesVersion, poolCount)
+
 	return info, nil
 }
 
@@ -350,6 +410,11 @@ func (d *Driver) Remove(ctx context.Context, clusterInfo *types.ClusterInfo) err
 
 	if s.CloudspaceName == "" {
 		logrus.Warnf("[%s] no cloudspace name in state, nothing to remove", driverName)
+		return nil
+	}
+
+	if s.Imported {
+		logrus.Infof("[%s] cloudspace %s was imported; skipping deletion", driverName, s.CloudspaceName)
 		return nil
 	}
 
