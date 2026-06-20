@@ -77,7 +77,7 @@ Rancher installs the Helm chart, which registers:
 
 The cluster driver status changes to **Active** within ~30 seconds.
 
-![Rackspace Spot extension installed in Rancher](docs/ui.png)
+![Rackspace Spot extension installed in Rancher](ui.png)
 
 ### Step 3 — Create a cluster
 
@@ -85,7 +85,7 @@ The cluster driver status changes to **Active** within ~30 seconds.
 2. Choose **Rackspace Spot** from the provider list.
 3. Fill in the cluster configuration (see [Configuration reference](#configuration-reference) below).
 
-![Cluster creation form](docs/create.png)
+![Cluster creation form](create.png)
 
 4. Click **Create**.
 
