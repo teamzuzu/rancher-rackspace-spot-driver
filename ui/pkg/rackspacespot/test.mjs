@@ -116,6 +116,9 @@ function validateConfig(clusterName, config, autoscalingPoolCount) {
   if (!clusterName) return 'Cluster Name is required';
   if (!config.rackspaceSpotRefreshToken) return 'Refresh Token is required';
   if (!config.rackspaceSpotOrganization) return 'Organization is required';
+  if (config.importExistingCluster && !config.importCloudspaceName) {
+    return 'Cloudspace Name is required when importing an existing cluster';
+  }
   if (!config.importExistingCluster) {
     if (config.onDemandEnabled && !config.onDemandServerClass) {
       return 'On-Demand Server Class is required when the on-demand pool is enabled';
@@ -128,13 +131,23 @@ function validateConfig(clusterName, config, autoscalingPoolCount) {
 }
 
 console.log('\nimport mode validation:');
-test('import mode skips on-demand server class check', () => {
+test('import mode requires cloudspace name', () => {
+  const err = validateConfig('my-cluster', {
+    rackspaceSpotRefreshToken: 'tok',
+    rackspaceSpotOrganization: 'org',
+    importExistingCluster:     true,
+    importCloudspaceName:      '',
+  }, 0);
+  assert.ok(err !== null && err.includes('Cloudspace Name'), `expected Cloudspace Name error, got: ${err}`);
+});
+test('import mode with cloudspace name skips pool checks', () => {
   const err = validateConfig('my-cluster', {
     rackspaceSpotRefreshToken: 'tok',
     rackspaceSpotOrganization: 'org',
     onDemandEnabled:           true,
     onDemandServerClass:       '',
     importExistingCluster:     true,
+    importCloudspaceName:      'us',
   }, 0);
   assert.equal(err, null);
 });
@@ -153,6 +166,7 @@ test('import mode skips autoscaling pool count check', () => {
     rackspaceSpotRefreshToken: 'tok',
     rackspaceSpotOrganization: 'org',
     importExistingCluster:     true,
+    importCloudspaceName:      'us',
   }, 2);
   assert.equal(err, null);
 });

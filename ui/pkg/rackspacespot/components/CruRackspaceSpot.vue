@@ -58,8 +58,19 @@
           label="Import existing cluster"
           :mode="mode === 'edit' ? 'view' : mode"
         />
-        <p v-if="config.importExistingCluster" class="import-note mt-5">
-          Node pool configuration will be read from the existing cloudspace after import.
+      </div>
+    </div>
+    <div v-if="config.importExistingCluster" class="row mt-10">
+      <div class="col span-6">
+        <LabeledInput
+          v-model:value="config.importCloudspaceName"
+          label="Cloudspace Name"
+          placeholder="exact-cloudspace-name"
+          :required="true"
+          :mode="mode === 'edit' ? 'view' : mode"
+        />
+        <p class="import-note mt-5">
+          Enter the exact name of the existing Rackspace Spot cloudspace to import. Node pool configuration will be read from the live cloudspace.
         </p>
       </div>
     </div>
@@ -331,6 +342,7 @@ const DEFAULTS = {
   cni:                     'calico',
   gpuEnabled:              false,
   importExistingCluster:   false,
+  importCloudspaceName:    '',
   spotServerClass:         'gp.vs1.medium-iad',
   spotNodeCount:           3,
   spotBidPrice:            '0.01',
@@ -524,6 +536,11 @@ export default defineComponent({
       }
       if (!this.config.rackspaceSpotOrganization) {
         this.errors = ['Organization is required'];
+        if (btnCb) btnCb(false);
+        return;
+      }
+      if (this.config.importExistingCluster && !this.config.importCloudspaceName) {
+        this.errors = ['Cloudspace Name is required when importing an existing cluster'];
         if (btnCb) btnCb(false);
         return;
       }

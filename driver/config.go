@@ -37,6 +37,7 @@ const (
 	flagOnDemandPrice       = "on-demand-price-per-hour"
 	flagAdditionalSpotPools = "additional-spot-pools"
 	flagImportExisting      = "import-existing-cluster"
+	flagImportCloudspaceName = "import-cloudspace-name"
 
 	defaultK8sVersion = "1.33.0"
 	defaultCNI        = "calico"

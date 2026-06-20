@@ -137,6 +137,10 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 				Usage:   "Import an existing Rackspace Spot cloudspace instead of creating a new one",
 				Default: &types.Default{DefaultBool: false},
 			},
+			flagImportCloudspaceName: {
+				Type:  types.StringType,
+				Usage: "Name of the existing Rackspace Spot cloudspace to import (required when import-existing-cluster is true)",
+			},
 		},
 	}
 	return flags, nil
@@ -209,9 +213,10 @@ func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterI
 		}
 	}()
 
-	logrus.Infof("[%s] Create() started", driverName)
+	importing := getBoolOption(opts, flagImportExisting, "importExistingCluster")
+	logrus.Infof("[%s] Create() started (importExistingCluster=%v)", driverName, importing)
 
-	if getBoolOption(opts, flagImportExisting, "importExistingCluster") {
+	if importing {
 		return d.importCluster(ctx, opts, clusterInfo)
 	}
 
@@ -285,13 +290,13 @@ func (d *Driver) importCluster(ctx context.Context, opts *types.DriverOptions, c
 		return nil, fmt.Errorf("%s is required", flagRefreshToken)
 	}
 
-	rawName := opts.StringOptions["name"]
+	rawName := getStringOption(opts, flagImportCloudspaceName, "importCloudspaceName")
 	cloudspaceName, err := sanitizeResourceName(rawName)
 	if err != nil {
-		return nil, fmt.Errorf("invalid cluster name: %w", err)
+		return nil, fmt.Errorf("invalid cloudspace name: %w", err)
 	}
 	if cloudspaceName == "" {
-		return nil, fmt.Errorf("cluster name is required")
+		return nil, fmt.Errorf("cloudspace name is required when importing — set the 'Cloudspace Name' field to the exact name of the existing cloudspace")
 	}
 
 	logrus.Infof("[%s] importing cloudspace %q (org: %s)", driverName, cloudspaceName, org)
