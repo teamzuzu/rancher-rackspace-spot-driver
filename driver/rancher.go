@@ -52,7 +52,7 @@ func syncGenericEngineConfig(ctx context.Context, s *clusterState) {
 		"spotNodePoolName":        s.SpotPoolName,
 		"spotServerClass":         s.SpotServerClass,
 		"spotNodeCount":           int64(s.SpotNodeCount),
-		"spotBidPrice":            s.SpotBidPrice,
+		"spotBidPrice":            normalizeBidPrice(s.SpotBidPrice),
 		"spotAutoscalingEnabled":  s.SpotAutoscaling,
 		"spotAutoscalingMinNodes": s.SpotMinNodes,
 		"spotAutoscalingMaxNodes": s.SpotMaxNodes,

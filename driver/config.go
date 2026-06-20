@@ -270,7 +270,7 @@ func stateFromCloudspace(cs *spotv1.CloudSpace, org, token string) *clusterState
 			s.SpotPoolName = p.Name
 			s.SpotServerClass = p.ServerClass
 			s.SpotNodeCount = p.Desired
-			s.SpotBidPrice = p.BidPrice
+			s.SpotBidPrice = normalizeBidPrice(p.BidPrice)
 			s.SpotAutoscaling = p.Autoscaling.Enabled
 			s.SpotMinNodes = p.Autoscaling.MinNodes
 			s.SpotMaxNodes = p.Autoscaling.MaxNodes
@@ -279,7 +279,7 @@ func stateFromCloudspace(cs *spotv1.CloudSpace, org, token string) *clusterState
 				Name:        p.Name,
 				ServerClass: p.ServerClass,
 				NodeCount:   p.Desired,
-				BidPrice:    p.BidPrice,
+				BidPrice:    normalizeBidPrice(p.BidPrice),
 				Autoscaling: p.Autoscaling.Enabled,
 				MinNodes:    p.Autoscaling.MinNodes,
 				MaxNodes:    p.Autoscaling.MaxNodes,
@@ -414,4 +414,10 @@ func lookupIntOption(opts *types.DriverOptions, keys ...string) (int64, bool) {
 		}
 	}
 	return 0, false
+}
+
+// normalizeBidPrice strips the leading "$" that the Spot SDK adds when reading
+// pool bid prices from the API. The API rejects the "$" prefix on writes.
+func normalizeBidPrice(price string) string {
+	return strings.TrimPrefix(price, "$")
 }
