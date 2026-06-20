@@ -96,6 +96,28 @@ See the full [Configuration reference](configuration.md) for all available optio
 
 ---
 
+## Importing an existing cluster
+
+If you have a Cloudspace already running in the Rackspace Spot console, you can bring it into Rancher without reprovisioning it.
+
+1. Go to **☰ → Cluster Management → Clusters → Create**
+2. Select **Rackspace Spot** from the provider list
+3. Enter your **Organization** and **Refresh Token**
+4. Set **Cluster Name** to the **exact name** of your existing Cloudspace
+5. Check **Import existing cluster**
+6. Click **Create**
+
+The driver calls `GetCloudspace` on the Spot API, reads the live configuration, and stores it as the cluster state in Rancher. No new infrastructure is created or modified.
+
+Once the cluster reaches **Active**, you can use the **Edit** form to manage its node pools through Rancher as normal.
+
+!!! info "After import"
+    - Pool configuration is read from the live Cloudspace — the form is pre-populated on first edit
+    - The **Import existing cluster** toggle is locked to read-only after creation (import is a one-time action)
+    - If you later **delete** the cluster from Rancher, the underlying Cloudspace is **not** deleted — only the Rancher registration is removed
+
+---
+
 ## Upgrading the driver
 
 To upgrade, update the repository and upgrade the Helm chart:

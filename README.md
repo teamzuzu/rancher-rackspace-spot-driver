@@ -5,6 +5,7 @@ A Rancher cluster driver and UI extension to create and manage Rackspace Spot "C
 ### Features
 
 - Create and manage Cloudspaces in all supported Spot regions via the Rancher UI
+- **Import an existing Cloudspace** into Rancher without reprovisioning it
 - Select from a list of supported Cloudspace kubernetes versions
 - Create and update node pools with configurable bid and autoscaling options  
 - Add an optional on-demand node pool 
@@ -77,7 +78,7 @@ Rancher installs the Helm chart, which registers:
 
 The cluster driver status changes to **Active** within ~30 seconds.
 
-![Rackspace Spot extension installed in Rancher](ui.png)
+![Rackspace Spot extension installed in Rancher](https://raw.githubusercontent.com/teamzuzu/rancher-rackspace-spot-driver/main/docs/ui.png)
 
 ### Step 3 — Create a cluster
 
@@ -85,11 +86,28 @@ The cluster driver status changes to **Active** within ~30 seconds.
 2. Choose **Rackspace Spot** from the provider list.
 3. Fill in the cluster configuration (see [Configuration reference](#configuration-reference) below).
 
-![Cluster creation form](create.png)
+![Cluster creation form](https://raw.githubusercontent.com/teamzuzu/rancher-rackspace-spot-driver/main/docs/create.png)
 
 4. Click **Create**.
 
 Rancher will call the driver, which creates the CloudSpace and node pools. The cluster moves through `Provisioning → Waiting → Active` as the control plane and nodes come online (typically 5–10 minutes).
+
+### Step 4 — Import an existing cluster (optional)
+
+If you already have a Cloudspace running in the Rackspace Spot console and want to manage it through Rancher without reprovisioning it:
+
+1. Navigate to **☰ → Cluster Management → Clusters → Create**.
+2. Choose **Rackspace Spot** from the provider list.
+3. Enter your **Organization** and **Refresh Token**.
+4. Set **Cluster Name** to the exact name of your existing Cloudspace.
+5. Check **Import existing cluster**.
+6. Click **Create**.
+
+The driver reads the real Cloudspace configuration from the Spot API and registers it in Rancher. No new infrastructure is created. Once the cluster reaches **Active**, you can manage node pools through the Rancher Edit form as normal.
+
+> **Note:** Importing is a one-time create-time action. The toggle is read-only after the cluster is registered. If you later delete the cluster from Rancher, the underlying Cloudspace is **not** deleted.
+
+---
 
 ### Upgrading the driver
 
@@ -218,9 +236,11 @@ Browser (Rancher Dashboard)
 Rancher API → gRPC → kontainer-engine-driver-rackspacespot (Go binary)
                               │
                               ├─ Create    → CreateCloudspace + CreateSpotNodePool
+                              │             (or GetCloudspace only, when importing)
                               ├─ PostCheck → WaitForReady + GetKubeconfig + ServiceAccount
                               ├─ Update    → UpdateSpotNodePool (scale / bid price)
                               └─ Remove    → DeleteNodePools + DeleteCloudspace
+                                            (skipped for imported clusters)
 ```
 
 The driver binary is started by Rancher as a sidecar process. Rancher communicates with it over a local gRPC socket, then terminates it when the operation completes.
