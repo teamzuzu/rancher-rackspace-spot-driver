@@ -75,8 +75,8 @@
       </div>
     </div>
 
-    <!-- ── Cluster (hidden in import mode — values are read from the existing cloudspace) ── -->
-    <template v-if="!config.importExistingCluster">
+    <!-- ── Cluster (hidden during import create — shown in edit so users can adjust after import) ── -->
+    <template v-if="!config.importExistingCluster || mode === 'edit'">
       <h3 class="mt-20">Cluster</h3>
       <div class="row">
         <div class="col span-4">
@@ -123,8 +123,8 @@
         </div>
       </div>
     </template>
-    <!-- ── Node pools (hidden in import mode) ───────────── -->
-    <template v-if="!config.importExistingCluster">
+    <!-- ── Node pools (hidden during import create — shown in edit so users can manage pools) ── -->
+    <template v-if="!config.importExistingCluster || mode === 'edit'">
       <!-- ── Spot Node Pools ───────────────────────────────── -->
       <h3 class="mt-20">Spot Node Pools</h3>
       <a href="https://tombojer.github.io/spot-cost-analyzer/" target="_blank" rel="noopener" class="spot-cost-link">Estimate costs with the Spot Cost Analyzer ↗</a>
