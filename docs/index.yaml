@@ -14,6 +14,32 @@ entries:
       catalog.cattle.io/ui-component: plugins
       catalog.cattle.io/ui-extensions-version: '>= 3.0.0 < 4.0.0'
     apiVersion: v2
+    appVersion: v0.1.10
+    created: "2026-06-20T17:36:18.350077443Z"
+    description: Rancher cluster driver and UI extension for Rackspace Spot.
+    digest: 6e15f5d3aebe5f957af83a402a242507ea32dccd7491b11053e3c19a2892e5b9
+    home: https://github.com/teamzuzu/rancher-rackspace-spot-driver
+    icon: https://teamzuzu.github.io/rancher-rackspace-spot-driver/rackspace-spot-icon.svg
+    name: rackspacespot
+    sources:
+    - https://github.com/teamzuzu/rancher-rackspace-spot-driver
+    type: application
+    urls:
+    - https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/download/v0.1.10/rackspacespot-0.1.10.tgz
+    version: 0.1.10
+  - annotations:
+      catalog.cattle.io/display-name: Rackspace Spot
+      catalog.cattle.io/icon: https://teamzuzu.github.io/rancher-rackspace-spot-driver/rackspace-spot-icon.svg
+      catalog.cattle.io/kube-version: '>= 1.16.0-0'
+      catalog.cattle.io/namespace: cattle-ui-plugin-system
+      catalog.cattle.io/os: linux
+      catalog.cattle.io/permits-os: linux, windows
+      catalog.cattle.io/rancher-version: '>= 2.10.0-0'
+      catalog.cattle.io/release-name: rackspacespot
+      catalog.cattle.io/scope: management
+      catalog.cattle.io/ui-component: plugins
+      catalog.cattle.io/ui-extensions-version: '>= 3.0.0 < 4.0.0'
+    apiVersion: v2
     appVersion: v0.1.9
     created: "2026-06-20T17:16:31.293153659Z"
     description: Rancher cluster driver and UI extension for Rackspace Spot.
@@ -955,4 +981,4 @@ entries:
     urls:
     - https://teamzuzu.github.io/rancher-rackspace-spot-driver/charts/rackspacespot-0.0.1.tgz
     version: 0.0.1
-generated: "2026-06-20T17:16:31.29286898Z"
+generated: "2026-06-20T17:36:18.349287954Z"
