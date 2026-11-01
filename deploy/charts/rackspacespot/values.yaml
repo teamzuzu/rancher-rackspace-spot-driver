@@ -1,5 +1,5 @@
 kontainerDriver:
-  url: "https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/download/v0.1.14/rancher-rackspace-spot-driver_linux_amd64.tar.gz"
-  checksum: "aa6616724d24599ec7eb87736a8742a0e4c40adca0ca2e69c07d065d836a487f"
+  url: "https://github.com/teamzuzu/rancher-rackspace-spot-driver/releases/download/v0.1.15/rancher-rackspace-spot-driver_linux_amd64.tar.gz"
+  checksum: "5e94f1a324e354b85c37dc37a63d71fe867a4504530bf69bc49ddcbc26717bf3"
 uiPlugin:
-  endpoint: "https://teamzuzu.github.io/rancher-rackspace-spot-driver/extensions/rackspacespot/0.1.14"
+  endpoint: "https://teamzuzu.github.io/rancher-rackspace-spot-driver/extensions/rackspacespot/0.1.15"
