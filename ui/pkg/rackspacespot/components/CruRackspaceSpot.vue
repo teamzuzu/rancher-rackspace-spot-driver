@@ -323,17 +323,20 @@
       <button v-if="mode !== 'view'" class="btn btn-sm btn-primary mt-10" type="button" @click="addAutopilotPool">+ Add Autopilot Pool</button>
 
       <!-- ── On-Demand Node Pool ─────────────────────────────── -->
-      <h3 class="mt-20">On-Demand Node Pool</h3>
-      <div class="row">
-        <div class="col span-12">
-          <Checkbox
-            v-model:value="config.onDemandEnabled"
-            label="Add stable capacity alongside spot nodes"
-            :mode="mode"
-          />
+      <h3 class="mt-20">On-Demand Pool</h3>
+      <p>Add stable capacity that is never preempted. One on-demand pool is supported per Cloudspace.</p>
+      <div v-if="config.onDemandEnabled" class="pool-card mt-10">
+        <div class="pool-card-header">
+          <span class="pool-label">On-Demand Pool</span>
+          <button
+            v-if="mode !== 'view'"
+            class="btn btn-sm btn-danger"
+            type="button"
+            @click="config.onDemandEnabled = false"
+          >
+            Remove
+          </button>
         </div>
-      </div>
-      <template v-if="config.onDemandEnabled">
         <div class="row mt-10">
           <div class="col span-4">
             <LabeledSelect
@@ -362,7 +365,15 @@
             />
           </div>
         </div>
-      </template>
+      </div>
+      <button
+        v-if="!config.onDemandEnabled && mode !== 'view'"
+        class="btn btn-sm btn-primary mt-10"
+        type="button"
+        @click="config.onDemandEnabled = true"
+      >
+        + Add On-Demand Pool
+      </button>
     </template>
   </CruResource>
 </template>
