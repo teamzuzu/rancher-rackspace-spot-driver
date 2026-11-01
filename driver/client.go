@@ -38,9 +38,10 @@ type spotAPI interface {
 }
 
 type spotClient struct {
-	api    spotAPI
-	rawSDK *spotv1.RackspaceSpotClient
-	org    string
+	autopilot autopilotAPI
+	api       spotAPI
+	rawSDK    *spotv1.RackspaceSpotClient
+	org       string
 }
 
 func newSpotClient(ctx context.Context, refreshToken, org string) (*spotClient, error) {
@@ -55,7 +56,8 @@ func newSpotClient(ctx context.Context, refreshToken, org string) (*spotClient, 
 		return nil, fmt.Errorf("spot authentication failed: %w", err)
 	}
 
-	return &spotClient{api: c, rawSDK: c, org: org}, nil
+	adapter := &autopilotClient{RackspaceSpotClient: c}
+	return &spotClient{api: adapter, autopilot: adapter, rawSDK: c, org: org}, nil
 }
 
 // ensureCloudspace creates a CloudSpace or returns the existing one if already created.
@@ -117,6 +119,9 @@ func (c *spotClient) reconcileSpotNodePools(ctx context.Context, s *clusterState
 			minNodes:    s.SpotMinNodes,
 			maxNodes:    s.SpotMaxNodes,
 		},
+	}
+	if s.DisablePrimarySpotPool {
+		delete(desired, s.SpotPoolName)
 	}
 	for _, p := range s.AdditionalSpotPools {
 		desired[p.Name] = poolSpec{
@@ -257,6 +262,17 @@ func (c *spotClient) deleteOnDemandNodePools(ctx context.Context, s *clusterStat
 
 // deleteNodePools removes all node pools for a cloudspace before deletion.
 func (c *spotClient) deleteNodePools(ctx context.Context, s *clusterState) error {
+	if c.autopilot != nil {
+		pools, err := c.autopilot.ListAutopilotPools(ctx, c.org, s.CloudspaceName)
+		if err != nil {
+			return err
+		}
+		for _, p := range pools {
+			if err := c.autopilot.DeleteAutopilotPool(ctx, c.org, p.Name); err != nil && !isNotFound(err) {
+				return err
+			}
+		}
+	}
 	spotPools, err := c.api.ListSpotNodePools(ctx, c.org, s.CloudspaceName)
 	if err != nil && !isNotFound(err) {
 		return fmt.Errorf("failed to list spot node pools: %w", err)
@@ -311,7 +327,21 @@ func (c *spotClient) importCloudspace(ctx context.Context, org, cloudspaceName, 
 		}
 		return nil, fmt.Errorf("failed to look up cloudspace %q: %w", cloudspaceName, err)
 	}
-	return stateFromCloudspace(cs, org, token), nil
+	if adapter, ok := c.api.(*autopilotClient); ok {
+		cs, err = adapter.manualCloudspace(ctx, org, cloudspaceName, cs)
+		if err != nil {
+			return nil, err
+		}
+	}
+	s := stateFromCloudspace(cs, org, token)
+	if c.autopilot != nil {
+		s.AutopilotPools, err = c.autopilot.ListAutopilotPools(ctx, org, cloudspaceName)
+		if err != nil {
+			return nil, err
+		}
+		s.DisablePrimarySpotPool = s.SpotPoolName == ""
+	}
+	return s, nil
 }
 
 // nodeTotalCount returns the sum of desired nodes across all pools.

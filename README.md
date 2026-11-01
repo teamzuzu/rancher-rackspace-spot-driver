@@ -144,6 +144,29 @@ All options are set in the Rancher cluster creation form.
 | `gpu-enabled` | | `false` | Enable GPU support on the CloudSpace |
 | `preemption-webhook-url` | | — | Webhook called before spot nodes are preempted |
 
+### Autopilot pools
+
+Autopilot requests capacity by total vCPU and hourly pool budget. Rackspace
+selects server classes and manages bids automatically. Add pools in the
+**Autopilot Pools** section; enable **Disable primary manual spot pool** for
+Autopilot-only capacity. Manual spot and on-demand pools can coexist with Autopilot.
+
+For API-driven Rancher configuration, `autopilot-pools` (`autopilotPools` in
+engine configuration) is a JSON array, for example:
+
+```json
+[{"vcpus": 16, "memoryPerVCPU": "4", "budgetPerHour": "0.50", "minVCPUsPerNode": 2, "maxVCPUsPerNode": 8}]
+```
+
+Pool names are generated as UUIDs when omitted. Preserve returned names when
+editing; submit `[]` to remove all Autopilot pools. Memory per vCPU accepts
+`any`, `2`, `4`, or `8` GB; node-size bounds are optional (zero means unset).
+Autopilot pools do not support autoscaling. Scale them by changing total vCPUs,
+rather than Rancher's node-count scaling action. Import reads existing Autopilot
+settings; deleting an imported Rancher cluster preserves its Cloudspace.
+
+See [Rackspace’s Autopilot guide](https://spot.rackspace.com/docs/en/autopilot-bids).
+
 ### Spot node pool
 
 A spot pool is always created. Spot nodes are preemptible and billed at your bid price when capacity is available.

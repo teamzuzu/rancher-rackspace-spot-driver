@@ -12,14 +12,16 @@ import (
 )
 
 const (
-	flagRefreshToken      = "rackspace-spot-refresh-token"
-	flagOrganization      = "rackspace-spot-organization"
-	flagRegion            = "rackspace-spot-region"
-	flagK8sVersion        = "kubernetes-version"
-	flagCNI               = "cni"
-	flagGPUEnabled        = "gpu-enabled"
-	flagPreemptionWebhook = "preemption-webhook-url"
-	flagDeploymentType    = "deployment-type"
+	flagRefreshToken           = "rackspace-spot-refresh-token"
+	flagOrganization           = "rackspace-spot-organization"
+	flagRegion                 = "rackspace-spot-region"
+	flagK8sVersion             = "kubernetes-version"
+	flagCNI                    = "cni"
+	flagAutopilotPools         = "autopilot-pools"
+	flagDisablePrimarySpotPool = "disable-primary-spot-pool"
+	flagGPUEnabled             = "gpu-enabled"
+	flagPreemptionWebhook      = "preemption-webhook-url"
+	flagDeploymentType         = "deployment-type"
 
 	flagSpotPoolName    = "spot-node-pool-name"
 	flagSpotServerClass = "spot-server-class"
@@ -30,13 +32,13 @@ const (
 	flagSpotMinNodes    = "spot-autoscaling-min-nodes"
 	flagSpotMaxNodes    = "spot-autoscaling-max-nodes"
 
-	flagOnDemandEnabled     = "on-demand-enabled"
-	flagOnDemandPoolName    = "on-demand-node-pool-name"
-	flagOnDemandClass       = "on-demand-server-class"
-	flagOnDemandCount       = "on-demand-node-count"
-	flagOnDemandPrice       = "on-demand-price-per-hour"
-	flagAdditionalSpotPools = "additional-spot-pools"
-	flagImportExisting      = "import-existing-cluster"
+	flagOnDemandEnabled      = "on-demand-enabled"
+	flagOnDemandPoolName     = "on-demand-node-pool-name"
+	flagOnDemandClass        = "on-demand-server-class"
+	flagOnDemandCount        = "on-demand-node-count"
+	flagOnDemandPrice        = "on-demand-price-per-hour"
+	flagAdditionalSpotPools  = "additional-spot-pools"
+	flagImportExisting       = "import-existing-cluster"
 	flagImportCloudspaceName = "import-cloudspace-name"
 
 	defaultK8sVersion = "1.33.0"
@@ -82,6 +84,9 @@ type clusterState struct {
 	PreemptionWebhook string `json:"preemptionWebhookURL,omitempty"`
 	DeploymentType    string `json:"deploymentType,omitempty"`
 
+	AutopilotPools         []AutopilotPoolConfig `json:"autopilotPools,omitempty"`
+	DisablePrimarySpotPool bool                  `json:"disablePrimarySpotPool,omitempty"`
+
 	// Spot node pool
 	SpotPoolName    string `json:"spotPoolName"`
 	SpotServerClass string `json:"spotServerClass"`
@@ -106,24 +111,25 @@ type clusterState struct {
 
 func stateFromOptions(opts *types.DriverOptions) (*clusterState, error) {
 	s := &clusterState{
-		RefreshToken:      getStringOption(opts, flagRefreshToken, "rackspaceSpotRefreshToken"),
-		Organization:      getStringOption(opts, flagOrganization, "rackspaceSpotOrganization"),
-		Region:            getStringOption(opts, flagRegion, "rackspaceSpotRegion"),
-		KubernetesVersion: getStringOption(opts, flagK8sVersion, "kubernetesVersion"),
-		CNI:               getStringOption(opts, flagCNI, "cni"),
-		GPUEnabled:        getBoolOption(opts, flagGPUEnabled, "gpuEnabled"),
-		PreemptionWebhook: getStringOption(opts, flagPreemptionWebhook, "preemptionWebhookUrl"),
-		DeploymentType:    getStringOption(opts, flagDeploymentType, "deploymentType"),
-		SpotPoolName:      getStringOption(opts, flagSpotPoolName, "spotNodePoolName"),
-		SpotServerClass:   getStringOption(opts, flagSpotServerClass, "spotServerClass"),
-		SpotBidPrice:      getStringOption(opts, flagSpotBidPrice, "spotBidPrice"),
-		SpotAutoscaling:   getBoolOption(opts, flagSpotAutoscaling, "spotAutoscalingEnabled"),
-		SpotMinNodes:      getIntOption(opts, flagSpotMinNodes, "spotAutoscalingMinNodes"),
-		SpotMaxNodes:      getIntOption(opts, flagSpotMaxNodes, "spotAutoscalingMaxNodes"),
-		OnDemandEnabled:   getBoolOption(opts, flagOnDemandEnabled, "onDemandEnabled"),
-		OnDemandPoolName:  getStringOption(opts, flagOnDemandPoolName, "onDemandNodePoolName"),
-		OnDemandClass:     getStringOption(opts, flagOnDemandClass, "onDemandServerClass"),
-		OnDemandPrice:     getStringOption(opts, flagOnDemandPrice, "onDemandPricePerHour"),
+		DisablePrimarySpotPool: getBoolOption(opts, flagDisablePrimarySpotPool, "disablePrimarySpotPool"),
+		RefreshToken:           getStringOption(opts, flagRefreshToken, "rackspaceSpotRefreshToken"),
+		Organization:           getStringOption(opts, flagOrganization, "rackspaceSpotOrganization"),
+		Region:                 getStringOption(opts, flagRegion, "rackspaceSpotRegion"),
+		KubernetesVersion:      getStringOption(opts, flagK8sVersion, "kubernetesVersion"),
+		CNI:                    getStringOption(opts, flagCNI, "cni"),
+		GPUEnabled:             getBoolOption(opts, flagGPUEnabled, "gpuEnabled"),
+		PreemptionWebhook:      getStringOption(opts, flagPreemptionWebhook, "preemptionWebhookUrl"),
+		DeploymentType:         getStringOption(opts, flagDeploymentType, "deploymentType"),
+		SpotPoolName:           getStringOption(opts, flagSpotPoolName, "spotNodePoolName"),
+		SpotServerClass:        getStringOption(opts, flagSpotServerClass, "spotServerClass"),
+		SpotBidPrice:           getStringOption(opts, flagSpotBidPrice, "spotBidPrice"),
+		SpotAutoscaling:        getBoolOption(opts, flagSpotAutoscaling, "spotAutoscalingEnabled"),
+		SpotMinNodes:           getIntOption(opts, flagSpotMinNodes, "spotAutoscalingMinNodes"),
+		SpotMaxNodes:           getIntOption(opts, flagSpotMaxNodes, "spotAutoscalingMaxNodes"),
+		OnDemandEnabled:        getBoolOption(opts, flagOnDemandEnabled, "onDemandEnabled"),
+		OnDemandPoolName:       getStringOption(opts, flagOnDemandPoolName, "onDemandNodePoolName"),
+		OnDemandClass:          getStringOption(opts, flagOnDemandClass, "onDemandServerClass"),
+		OnDemandPrice:          getStringOption(opts, flagOnDemandPrice, "onDemandPricePerHour"),
 	}
 
 	if n, ok := lookupIntOption(opts, flagSpotNodeCount, "spotNodeCount"); ok {
@@ -136,6 +142,12 @@ func stateFromOptions(opts *types.DriverOptions) (*clusterState, error) {
 	if raw := getStringOption(opts, flagAdditionalSpotPools, "additionalSpotPools"); raw != "" {
 		if err := json.Unmarshal([]byte(raw), &s.AdditionalSpotPools); err != nil {
 			return nil, fmt.Errorf("failed to parse additional spot pools: %w", err)
+		}
+	}
+
+	if raw := getStringOption(opts, flagAutopilotPools, "autopilotPools"); raw != "" {
+		if err := json.Unmarshal([]byte(raw), &s.AutopilotPools); err != nil {
+			return nil, fmt.Errorf("invalid autopilot pools: %w", err)
 		}
 	}
 
@@ -160,6 +172,15 @@ var k8sVersionMap = map[string]string{
 }
 
 func applyDefaults(s *clusterState) {
+	for i := range s.AutopilotPools {
+		p := &s.AutopilotPools[i]
+		if p.Name == "" {
+			p.Name = uuid.NewString()
+		}
+		if p.MemoryPerVCPU == "" {
+			p.MemoryPerVCPU = "any"
+		}
+	}
 	if s.KubernetesVersion == "" {
 		s.KubernetesVersion = defaultK8sVersion
 	}
@@ -206,6 +227,9 @@ func applyDefaults(s *clusterState) {
 }
 
 func validate(s *clusterState) error {
+	if err := validateAutopilotPools(s.AutopilotPools); err != nil {
+		return err
+	}
 	if s.RefreshToken == "" {
 		return fmt.Errorf("%s is required", flagRefreshToken)
 	}
@@ -216,7 +240,7 @@ func validate(s *clusterState) error {
 		return fmt.Errorf("%s is required", flagRegion)
 	}
 	autoscalingCount := 0
-	if s.SpotAutoscaling {
+	if !s.DisablePrimarySpotPool && s.SpotAutoscaling {
 		autoscalingCount++
 	}
 	for _, p := range s.AdditionalSpotPools {
@@ -321,6 +345,9 @@ func (s *clusterState) save(info *types.ClusterInfo) error {
 // mergeState overwrites the mutable fields from opts into an existing state,
 // preserving identity fields (CloudspaceName, Organization) that cannot change.
 func mergeState(existing *clusterState, opts *types.DriverOptions) {
+	if v, ok := lookupBoolOption(opts, flagDisablePrimarySpotPool, "disablePrimarySpotPool"); ok {
+		existing.DisablePrimarySpotPool = v
+	}
 	if v := getStringOption(opts, flagRefreshToken, "rackspaceSpotRefreshToken"); v != "" {
 		existing.RefreshToken = v
 	}

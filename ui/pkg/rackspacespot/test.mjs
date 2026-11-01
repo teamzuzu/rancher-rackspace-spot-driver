@@ -2,6 +2,7 @@
 // Tests the pure-JS logic from CruRackspaceSpot.vue without a browser or framework.
 
 import assert from 'node:assert/strict';
+import { normalizeAutopilotPools, validateAutopilotPools } from './autopilot.mjs';
 
 const knownServerClasses = [
   { name: 'ch.vs1.2xlarge-iad', region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '16', memory: '30GB'   },
@@ -177,6 +178,20 @@ test('normal mode rejects multiple autoscaling pools', () => {
     importExistingCluster:     false,
   }, 2);
   assert.ok(err !== null && err.includes('autoscaling'), `expected autoscaling error, got: ${err}`);
+});
+
+test('Autopilot normalizes form strings and optional bounds', () => {
+  const pools = normalizeAutopilotPools([{ name: 'pool-id', vcpus: '16', memoryPerVCPU: 4, budgetPerHour: '0.50', minVCPUsPerNode: '', maxVCPUsPerNode: '8' }]);
+  assert.deepEqual(pools, [{ name: 'pool-id', vcpus: 16, memoryPerVCPU: '4', budgetPerHour: '0.50', minVCPUsPerNode: 0, maxVCPUsPerNode: 8 }]);
+  assert.equal(validateAutopilotPools(pools), '');
+});
+test('Autopilot validates capacity, memory, budget and bounds', () => {
+  const valid = { vcpus: 16, memoryPerVCPU: 'any', budgetPerHour: '0.50', minVCPUsPerNode: 0, maxVCPUsPerNode: 0 };
+  assert.equal(validateAutopilotPools([valid]), '');
+  assert.equal(validateAutopilotPools([]), '');
+  for (const change of [{ vcpus: 0 }, { vcpus: 1.5 }, { memoryPerVCPU: '3' }, { budgetPerHour: 'NaN' }, { budgetPerHour: '0' }, { minVCPUsPerNode: -1 }, { minVCPUsPerNode: 8, maxVCPUsPerNode: 2 }]) {
+    assert.ok(validateAutopilotPools([{ ...valid, ...change }]));
+  }
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

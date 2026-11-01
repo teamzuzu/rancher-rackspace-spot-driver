@@ -2,6 +2,7 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -59,6 +60,8 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 				Usage:   "CNI plugin (calico, flannel)",
 				Default: &types.Default{DefaultString: defaultCNI},
 			},
+			flagAutopilotPools:         {Type: types.StringType, Usage: "JSON array of Autopilot pools (name, vcpus, memoryPerVCPU, budgetPerHour, minVCPUsPerNode, maxVCPUsPerNode)"},
+			flagDisablePrimarySpotPool: {Type: types.BoolType, Usage: "Disable the primary manual spot pool", Default: &types.Default{DefaultBool: false}},
 			flagGPUEnabled: {
 				Type:    types.BoolType,
 				Usage:   "Enable GPU support on the CloudSpace",
@@ -150,6 +153,8 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 func (d *Driver) GetDriverUpdateOptions(ctx context.Context) (*types.DriverFlags, error) {
 	flags := &types.DriverFlags{
 		Options: map[string]*types.Flag{
+			flagAutopilotPools:         {Type: types.StringType, Usage: "JSON array of Autopilot pools; [] removes all pools"},
+			flagDisablePrimarySpotPool: {Type: types.BoolType, Usage: "Disable the primary manual spot pool"},
 			flagRefreshToken: {
 				Type:     types.StringType,
 				Usage:    "Rackspace Spot refresh token (update to rotate credentials)",
@@ -266,6 +271,10 @@ func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, clusterI
 	}
 	logrus.Infof("[%s] reconcileSpotNodePools OK", driverName)
 
+	if err := client.reconcileAutopilotNodePools(ctx, s); err != nil {
+		return info, err
+	}
+
 	if err := client.reconcileOnDemandNodePool(ctx, s); err != nil {
 		logrus.Errorf("[%s] reconcileOnDemandNodePool failed: %v", driverName, err)
 		return info, err
@@ -341,8 +350,16 @@ func (d *Driver) Update(ctx context.Context, clusterInfo *types.ClusterInfo, opt
 		return clusterInfo, err
 	}
 
+	if raw, ok := lookupStringOption(opts, flagAutopilotPools, "autopilotPools"); ok {
+		if err := json.Unmarshal([]byte(raw), &s.AutopilotPools); err != nil {
+			return clusterInfo, fmt.Errorf("invalid autopilot pools: %w", err)
+		}
+	}
 	mergeState(s, opts)
 	applyDefaults(s)
+	if err := validate(s); err != nil {
+		return clusterInfo, err
+	}
 
 	client, err := newSpotClient(ctx, s.RefreshToken, s.Organization)
 	if err != nil {
@@ -352,6 +369,9 @@ func (d *Driver) Update(ctx context.Context, clusterInfo *types.ClusterInfo, opt
 	logrus.Infof("[%s] updating cloudspace %s", driverName, s.CloudspaceName)
 
 	if err := client.reconcileSpotNodePools(ctx, s); err != nil {
+		return clusterInfo, err
+	}
+	if err := client.reconcileAutopilotNodePools(ctx, s); err != nil {
 		return clusterInfo, err
 	}
 	if err := client.reconcileOnDemandNodePool(ctx, s); err != nil {
@@ -489,6 +509,10 @@ func (d *Driver) SetClusterSize(ctx context.Context, clusterInfo *types.ClusterI
 	s, err := stateFromClusterInfo(clusterInfo)
 	if err != nil {
 		return err
+	}
+
+	if s.DisablePrimarySpotPool {
+		return fmt.Errorf("primary spot pool is disabled; scale Autopilot pools by vCPU in pool configuration")
 	}
 
 	client, err := newSpotClient(ctx, s.RefreshToken, s.Organization)

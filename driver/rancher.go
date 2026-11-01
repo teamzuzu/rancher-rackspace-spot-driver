@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	k8stypes "k8s.io/apimachinery/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 )
@@ -48,7 +48,16 @@ func syncGenericEngineConfig(ctx context.Context, s *clusterState) {
 		}
 	}
 
+	autopilotPools, err := json.Marshal(s.AutopilotPools)
+	if err != nil {
+		return
+	}
+	if len(s.AutopilotPools) == 0 {
+		autopilotPools = []byte("[]")
+	}
 	engineConfig := map[string]interface{}{
+		"autopilotPools":          string(autopilotPools),
+		"disablePrimarySpotPool":  s.DisablePrimarySpotPool,
 		"spotNodePoolName":        s.SpotPoolName,
 		"spotServerClass":         s.SpotServerClass,
 		"spotNodeCount":           int64(s.SpotNodeCount),

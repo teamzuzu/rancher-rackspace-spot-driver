@@ -129,8 +129,14 @@
       <h3 class="mt-20">Spot Node Pools</h3>
       <a href="https://tombojer.github.io/spot-cost-analyzer/" target="_blank" rel="noopener" class="spot-cost-link">Estimate costs with the Spot Cost Analyzer ↗</a>
 
+      <Checkbox
+        v-model:value="config.disablePrimarySpotPool"
+        label="Disable primary manual spot pool (use Autopilot capacity instead)"
+        :mode="mode"
+      />
+
       <!-- ── Primary spot pool ─────────────────────────────── -->
-      <div class="pool-card mt-15">
+      <div v-if="!config.disablePrimarySpotPool" class="pool-card mt-15">
         <div class="pool-card-header">
           <span class="pool-label">Pool 1 (primary)</span>
         </div>
@@ -280,6 +286,35 @@
         </button>
       </div>
 
+      <h3 class="mt-20">Autopilot Pools</h3>
+      <p>Request total vCPU capacity within an hourly budget. Rackspace selects server classes and manages bids. Autoscaling is not supported.</p>
+      <div v-for="(pool, idx) in autopilotPools" :key="pool.name || idx" class="pool-card mt-10">
+        <div class="pool-card-header">
+          <span class="pool-label">Autopilot Pool {{ idx + 1 }}</span>
+          <button v-if="mode !== 'view'" class="btn btn-sm btn-danger" type="button" @click="autopilotPools.splice(idx, 1)">Remove</button>
+        </div>
+        <div class="row mt-10">
+          <div class="col span-4">
+            <LabeledInput v-model:value="pool.vcpus" label="Total vCPUs" type="number" :min="1" :mode="mode" />
+          </div>
+          <div class="col span-4">
+            <LabeledSelect v-model:value="pool.memoryPerVCPU" label="Memory per vCPU (GB)" :options="['any', '2', '4', '8']" :mode="mode" />
+          </div>
+          <div class="col span-4">
+            <LabeledInput v-model:value="pool.budgetPerHour" label="Pool Budget (USD/hr)" :mode="mode" />
+          </div>
+        </div>
+        <div class="row mt-10">
+          <div class="col span-6">
+            <LabeledInput v-model:value="pool.minVCPUsPerNode" label="Min vCPUs per Node (0 = unset)" type="number" :min="0" :mode="mode" />
+          </div>
+          <div class="col span-6">
+            <LabeledInput v-model:value="pool.maxVCPUsPerNode" label="Max vCPUs per Node (0 = unset)" type="number" :min="0" :mode="mode" />
+          </div>
+        </div>
+      </div>
+      <button v-if="mode !== 'view'" class="btn btn-sm btn-primary mt-10" type="button" @click="addAutopilotPool">+ Add Autopilot Pool</button>
+
       <!-- ── On-Demand Node Pool ─────────────────────────────── -->
       <h3 class="mt-20">On-Demand Node Pool</h3>
       <div class="row">
@@ -333,6 +368,8 @@ import LabeledInput      from '@components/Form/LabeledInput/LabeledInput';
 import LabeledSelect     from '@shell/components/form/LabeledSelect';
 import Checkbox          from '@components/Form/Checkbox/Checkbox';
 
+import { normalizeAutopilotPools, validateAutopilotPools } from '../autopilot.mjs';
+
 const DRIVER = 'rackspacespot';
 
 const DEFAULTS = {
@@ -340,6 +377,7 @@ const DEFAULTS = {
   rackspaceSpotRegion:     'us-east-iad-1',
   kubernetesVersion:       '1.33.0',
   cni:                     'calico',
+  disablePrimarySpotPool: false,
   gpuEnabled:              false,
   importExistingCluster:   false,
   importCloudspaceName:    '',
@@ -408,6 +446,7 @@ export default defineComponent({
         || this.value?.metadata?.name
         || '',
       config:               { ...DEFAULTS, ...raw },
+      autopilotPools: raw.autopilotPools ? JSON.parse(raw.autopilotPools) : [],
       additionalSpotPools,
       errors:               [],
       availableRegions:     [],
@@ -457,7 +496,7 @@ export default defineComponent({
       return !!(this.clusterName && this.config.rackspaceSpotRefreshToken && this.config.rackspaceSpotOrganization);
     },
     autoscalingPoolCount() {
-      return (this.config.spotAutoscalingEnabled ? 1 : 0)
+      return (!this.config.disablePrimarySpotPool && this.config.spotAutoscalingEnabled ? 1 : 0)
         + this.additionalSpotPools.filter(p => p.autoscaling).length;
     },
     primaryAutoscalingDisabled() {
@@ -513,6 +552,10 @@ export default defineComponent({
   },
 
   methods: {
+    addAutopilotPool() {
+      this.autopilotPools.push({ name: crypto.randomUUID(), vcpus: 8, memoryPerVCPU: 'any', budgetPerHour: '0.10', minVCPUsPerNode: 0, maxVCPUsPerNode: 0 });
+    },
+
     addSpotPool() {
       this.additionalSpotPools.push(emptyPool());
     },
@@ -557,9 +600,20 @@ export default defineComponent({
         }
       }
 
+      const autopilotPools = normalizeAutopilotPools(this.autopilotPools);
+      if (!this.config.importExistingCluster || this.mode === 'edit') {
+        const error = validateAutopilotPools(autopilotPools);
+        if (error) {
+          this.errors = [error];
+          if (btnCb) btnCb(false);
+          return;
+        }
+      }
+
       try {
         const cfg = {
           ...this.config,
+          autopilotPools: JSON.stringify(autopilotPools),
           additionalSpotPools: JSON.stringify(this.additionalSpotPools),
         };
 
