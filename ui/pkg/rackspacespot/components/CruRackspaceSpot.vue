@@ -370,25 +370,28 @@ import Checkbox          from '@components/Form/Checkbox/Checkbox';
 
 import { normalizeAutopilotPools, validateAutopilotPools } from '../autopilot.mjs';
 
+import catalog from '../../../../driver/catalog.json';
+import { regionOptions, versionOptions, cniOptions, serverClassOptions, defaultServerClass } from '../catalog.mjs';
+
 const DRIVER = 'rackspacespot';
 
 const DEFAULTS = {
   driverName:              DRIVER,
-  rackspaceSpotRegion:     'us-east-iad-1',
-  kubernetesVersion:       '1.33.0',
-  cni:                     'calico',
+  rackspaceSpotRegion:     catalog.defaults.region,
+  kubernetesVersion:       catalog.defaults.kubernetesVersion,
+  cni:                     catalog.defaults.cni,
   disablePrimarySpotPool: false,
   gpuEnabled:              false,
   importExistingCluster:   false,
   importCloudspaceName:    '',
-  spotServerClass:         'gp.vs1.medium-iad',
+  spotServerClass:         catalog.defaults.serverClass,
   spotNodeCount:           3,
   spotBidPrice:            '0.01',
   spotAutoscalingEnabled:  false,
   spotAutoscalingMinNodes: 1,
   spotAutoscalingMaxNodes: 10,
   onDemandEnabled:         false,
-  onDemandServerClass:     'gp.vs1.medium-iad',
+  onDemandServerClass:     catalog.defaults.serverClass,
   onDemandNodeCount:       1,
 };
 
@@ -439,55 +442,21 @@ export default defineComponent({
         additionalSpotPools = JSON.parse(raw.additionalSpotPools);
       } catch (e) {}
     }
+    const config = { ...DEFAULTS, ...raw };
+    if (this.mode === 'create') {
+      if (!raw.spotServerClass) config.spotServerClass = defaultServerClass(catalog, config.rackspaceSpotRegion);
+      if (!raw.onDemandServerClass) config.onDemandServerClass = defaultServerClass(catalog, config.rackspaceSpotRegion);
+    }
     return {
       clusterName: this.value?.displayName
         || this.value?.spec?.displayName
         || this.value?.name
         || this.value?.metadata?.name
         || '',
-      config:               { ...DEFAULTS, ...raw },
+      config,
       autopilotPools: raw.autopilotPools ? JSON.parse(raw.autopilotPools) : [],
       additionalSpotPools,
       errors:               [],
-      availableRegions:     [],
-      knownRegions: [
-        { name: 'aus-syd-1',        description: 'Sydney, Australia' },
-        { name: 'hkg-hkg-1',        description: 'Hong Kong, Hong Kong' },
-        { name: 'uk-lon-1',         description: 'United Kingdom, London' },
-        { name: 'us-central-dfw-1', description: 'US Central, Dallas Fort Worth, TX' },
-        { name: 'us-central-dfw-2', description: 'US Central, Dallas Fort Worth, TX' },
-        { name: 'us-central-ord-1', description: 'US Central, Chicago, IL' },
-        { name: 'us-east-iad-1',    description: 'US East, Ashburn, VA' },
-        { name: 'us-east-iad-2',    description: 'US East, Ashburn, VA' },
-        { name: 'us-west-sjc-1',    description: 'US West, San Jose, CA' },
-      ],
-      knownServerClasses: [
-        { name: 'ch.vs1.2xlarge-iad', region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '16', memory: '30GB' },
-        { name: 'ch.vs1.large-iad',   region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '4',  memory: '7.5GB' },
-        { name: 'ch.vs1.medium-iad',  region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '2',  memory: '3.75GB' },
-        { name: 'ch.vs1.xlarge-iad',  region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '8',  memory: '15GB' },
-        { name: 'gp.bm2.small-iad',   region: 'us-east-iad-1', category: 'Bare Metal',       cpu: '12', memory: '32GB' },
-        { name: 'gp.vs1.2xlarge-iad', region: 'us-east-iad-1', category: 'General Purpose', cpu: '16', memory: '60GB' },
-        { name: 'gp.vs1.large-iad',   region: 'us-east-iad-1', category: 'General Purpose', cpu: '4',  memory: '15GB' },
-        { name: 'gp.vs1.medium-iad',  region: 'us-east-iad-1', category: 'General Purpose', cpu: '2',  memory: '3.75GB' },
-        { name: 'gp.vs1.xlarge-iad',  region: 'us-east-iad-1', category: 'General Purpose', cpu: '8',  memory: '30GB' },
-        { name: 'io.bm2-iad',         region: 'us-east-iad-1', category: 'Bare Metal',       cpu: '40', memory: '128GB' },
-        { name: 'mh.vs1.2xlarge-iad', region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '16', memory: '120GB' },
-        { name: 'mh.vs1.large-iad',   region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '4',  memory: '30GB' },
-        { name: 'mh.vs1.medium-iad',  region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '2',  memory: '15GB' },
-        { name: 'mh.vs1.xlarge-iad',  region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '8',  memory: '60GB' },
-      ],
-      cniOptions:           [
-        { label: 'calico', value: 'calico' },
-        { label: 'cilium', value: 'cilium' },
-      ],
-      k8sVersionOptions: [
-        { label: '1.33.0', value: '1.33.0' },
-        { label: '1.32.9', value: '1.32.9' },
-        { label: '1.31.1', value: '1.31.1' },
-        { label: '1.30.10', value: '1.30.10' },
-        { label: '1.29.6', value: '1.29.6' },
-      ],
     };
   },
 
@@ -503,24 +472,17 @@ export default defineComponent({
       return this.autoscalingPoolCount >= 1 && !this.config.spotAutoscalingEnabled;
     },
     regionOptions() {
-      const source = this.availableRegions.length ? this.availableRegions : this.knownRegions;
-      return source.map(r => ({
-        label: r.description ? `${r.name} — ${r.description}` : r.name,
-        value: r.name,
-      }));
+      return regionOptions(catalog, this.config.rackspaceSpotRegion);
+    },
+    k8sVersionOptions() {
+      return versionOptions(catalog, this.config.kubernetesVersion);
+    },
+    cniOptions() {
+      return cniOptions(catalog, this.config.cni);
     },
     serverClassOptions() {
-      const region = this.config.rackspaceSpotRegion;
-      // Derive location code from region string: 'us-east-iad-1' → 'iad', 'aus-syd-1' → 'syd'
-      const parts = region ? region.split('-') : [];
-      const locCode = parts.length >= 2 ? parts[parts.length - 2] : 'iad';
-      return this.knownServerClasses.map(sc => {
-        const name = sc.name.replace(/-iad$/, `-${locCode}`);
-        return {
-          label: `${name} — ${sc.category}, ${sc.cpu} CPU, ${sc.memory}`,
-          value: name,
-        };
-      });
+      const current = this.mode === 'create' ? [] : [this.config.spotServerClass, this.config.onDemandServerClass, ...this.additionalSpotPools.map(pool => pool.serverClass)];
+      return serverClassOptions(catalog, this.config.rackspaceSpotRegion, current);
     },
   },
 
@@ -544,9 +506,9 @@ export default defineComponent({
 
   watch: {
     'config.rackspaceSpotRegion'(newRegion, oldRegion) {
-      if (this.mode === 'edit' || newRegion === oldRegion) return;
-      this.config.spotServerClass     = '';
-      this.config.onDemandServerClass = '';
+      if (this.mode !== 'create' || newRegion === oldRegion) return;
+      this.config.spotServerClass = defaultServerClass(catalog, newRegion);
+      this.config.onDemandServerClass = defaultServerClass(catalog, newRegion);
       this.additionalSpotPools.forEach(p => { p.serverClass = ''; });
     },
   },

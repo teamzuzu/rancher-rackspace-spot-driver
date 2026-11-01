@@ -41,11 +41,8 @@ const (
 	flagImportExisting       = "import-existing-cluster"
 	flagImportCloudspaceName = "import-cloudspace-name"
 
-	defaultK8sVersion = "1.33.0"
-	defaultCNI        = "calico"
-	defaultSpotClass  = "gp.vs1.medium-iad"
-	defaultSpotCount  = int64(3)
-	defaultSpotBid    = "0.01"
+	defaultSpotCount = int64(3)
+	defaultSpotBid   = "0.01"
 
 	metaStateKey = "state"
 
@@ -158,17 +155,6 @@ func stateFromOptions(opts *types.DriverOptions) (*clusterState, error) {
 	}
 
 	return s, nil
-}
-
-// k8sVersionMap normalises short-form versions (e.g. "1.33") to the full
-// semver the API requires.
-var k8sVersionMap = map[string]string{
-	"1.29": "1.29.6",
-	"1.30": "1.30.10",
-	"1.31": "1.31.1",
-	"1.32": "1.32.9",
-	"1.33": "1.33.0",
-	"1.28": "1.32.9", // old default → current stable
 }
 
 func applyDefaults(s *clusterState) {

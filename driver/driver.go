@@ -57,7 +57,7 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 			},
 			flagCNI: {
 				Type:    types.StringType,
-				Usage:   "CNI plugin (calico, flannel)",
+				Usage:   "CNI plugin (see the Rackspace option catalogue)",
 				Default: &types.Default{DefaultString: defaultCNI},
 			},
 			flagAutopilotPools:         {Type: types.StringType, Usage: "JSON array of Autopilot pools (name, vcpus, memoryPerVCPU, budgetPerHour, minVCPUsPerNode, maxVCPUsPerNode)"},

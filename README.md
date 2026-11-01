@@ -153,7 +153,7 @@ All options are set in the Rancher cluster creation form.
 | Option | Required | Default | Description |
 |---|---|---|---|
 | `rackspace-spot-region` | ✅ | — | Rackspace Spot region (e.g. `us-east-iad-1`) |
-| `kubernetes-version` | | `1.33.0` | Kubernetes version for the CloudSpace |
+| `kubernetes-version` | | Latest in catalogue | Kubernetes version for the CloudSpace; see `driver/catalog.json` |
 | `cni` | | `calico` | CNI plugin (`calico`, `cilium`, or `byocni`) |
 | `gpu-enabled` | | `false` | Enable GPU support on the CloudSpace |
 | `preemption-webhook-url` | | — | Webhook called before spot nodes are preempted |
@@ -207,9 +207,43 @@ An on-demand pool provides stable capacity that is never preempted. Useful for s
 | `on-demand-node-count` | | `1` | Desired number of on-demand nodes |
 | `on-demand-price-per-hour` | | — | Maximum price per node-hour (USD) |
 
-### Available server classes
+### Keeping provider options current
 
-Run `spotctl server-classes list` to see classes available in your region, or visit the [Rackspace Spot portal](https://spot.rackspace.com).
+`driver/catalog.json` is the shared source for Kubernetes versions, regions,
+active server classes, and CNI choices. The UI filters classes by their actual
+region, including Gen 2 regions; the driver reads version/CNI/class defaults from
+the same catalogue. Existing cluster selections remain visible even if Rackspace
+retires them. Updating this catalogue does not upgrade existing clusters.
+
+The **Update Rackspace options** GitHub Action runs daily at 05:15 UTC and can
+also be started with **Run workflow**. It fetches versions, regions, and classes
+from Rackspace's authenticated API and CNI choices from its published OpenAPI
+schema. It opens or updates a PR on `chore/rackspace-catalog` only when options
+change. Merging that PR triggers the normal release workflow; upgrade the
+installed extension to receive the updated choices.
+
+One-time setup: add a Rackspace refresh token as the repository Actions secret
+**`SPOT_REFRESH_TOKEN`** under **Settings → Secrets and variables → Actions**.
+The workflow uses `GITHUB_TOKEN` to create its PR. No provider credentials are
+stored in the generated catalogue. A failed or incomplete upstream response
+leaves the previous catalogue intact.
+
+For a local refresh, export `SPOT_REFRESH_TOKEN` in your shell and run:
+
+```bash
+python3 scripts/update_catalog.py
+python3 scripts/update_catalog.py --check  # Verify without writing
+python3 -m unittest discover -s scripts -p 'test_*.py'
+npm --prefix ui test
+make test
+```
+
+Numeric pool settings, bid budgets, and feature toggles remain user choices;
+the catalogue tracks provider-supported dropdowns rather than changing those
+settings automatically.
+
+Run `spotctl server-classes list` for live server-class information, or visit
+the [Rackspace Spot portal](https://spot.rackspace.com).
 
 ---
 

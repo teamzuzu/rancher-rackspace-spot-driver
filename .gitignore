@@ -13,3 +13,6 @@ ui/dist-pkg/
 ui/.output/
 # .shell symlink created by build-pkg.sh during builds
 ui/pkg/**/.shell
+
+# Python catalogue tooling
+__pycache__/

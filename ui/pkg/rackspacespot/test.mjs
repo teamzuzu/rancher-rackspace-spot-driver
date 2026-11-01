@@ -2,35 +2,11 @@
 // Tests the pure-JS logic from CruRackspaceSpot.vue without a browser or framework.
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { serverClassOptions, regionOptions, versionOptions, cniOptions, defaultServerClass } from './catalog.mjs';
+const catalog = JSON.parse(readFileSync(new URL('../../../driver/catalog.json', import.meta.url)));
 import { CLUSTER_RESOURCE, isRackspaceSpotCluster, registerClusterEditor, createClusterProduct } from './cluster-editor.mjs';
 import { normalizeAutopilotPools, validateAutopilotPools } from './autopilot.mjs';
-
-const knownServerClasses = [
-  { name: 'ch.vs1.2xlarge-iad', region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '16', memory: '30GB'   },
-  { name: 'ch.vs1.large-iad',   region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '4',  memory: '7.5GB'  },
-  { name: 'ch.vs1.medium-iad',  region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '2',  memory: '3.75GB' },
-  { name: 'ch.vs1.xlarge-iad',  region: 'us-east-iad-1', category: 'Compute Heavy',   cpu: '8',  memory: '15GB'   },
-  { name: 'gp.bm2.small-iad',   region: 'us-east-iad-1', category: 'Bare Metal',       cpu: '12', memory: '32GB'   },
-  { name: 'gp.vs1.2xlarge-iad', region: 'us-east-iad-1', category: 'General Purpose', cpu: '16', memory: '60GB'   },
-  { name: 'gp.vs1.large-iad',   region: 'us-east-iad-1', category: 'General Purpose', cpu: '4',  memory: '15GB'   },
-  { name: 'gp.vs1.medium-iad',  region: 'us-east-iad-1', category: 'General Purpose', cpu: '2',  memory: '3.75GB' },
-  { name: 'gp.vs1.xlarge-iad',  region: 'us-east-iad-1', category: 'General Purpose', cpu: '8',  memory: '30GB'   },
-  { name: 'io.bm2-iad',         region: 'us-east-iad-1', category: 'Bare Metal',       cpu: '40', memory: '128GB'  },
-  { name: 'mh.vs1.2xlarge-iad', region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '16', memory: '120GB'  },
-  { name: 'mh.vs1.large-iad',   region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '4',  memory: '30GB'   },
-  { name: 'mh.vs1.medium-iad',  region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '2',  memory: '15GB'   },
-  { name: 'mh.vs1.xlarge-iad',  region: 'us-east-iad-1', category: 'Memory Heavy',    cpu: '8',  memory: '60GB'   },
-];
-
-// Mirror of the serverClassOptions computed property in CruRackspaceSpot.vue
-function serverClassOptions(region) {
-  const parts = region ? region.split('-') : [];
-  const locCode = parts.length >= 2 ? parts[parts.length - 2] : 'iad';
-  return knownServerClasses.map(sc => {
-    const name = sc.name.replace(/-iad$/, `-${locCode}`);
-    return { label: `${name} — ${sc.category}, ${sc.cpu} CPU, ${sc.memory}`, value: name };
-  });
-}
 
 let passed = 0;
 let failed = 0;
@@ -47,69 +23,39 @@ function test(name, fn) {
   }
 }
 
-console.log('\nLocation code extraction:');
-const locCases = [
-  ['us-east-iad-1',    'iad'],
-  ['us-east-iad-2',    'iad'],
-  ['us-central-dfw-1', 'dfw'],
-  ['us-central-dfw-2', 'dfw'],
-  ['us-central-ord-1', 'ord'],
-  ['us-west-sjc-1',    'sjc'],
-  ['aus-syd-1',        'syd'],
-  ['hkg-hkg-1',        'hkg'],
-  ['uk-lon-1',         'lon'],
-];
-for (const [region, expected] of locCases) {
-  test(`${region} → ${expected}`, () => {
-    const parts = region.split('-');
-    const got = parts[parts.length - 2];
-    assert.equal(got, expected);
-  });
-}
-
-console.log('\nserverClassOptions:');
-test('us-east-iad-1 keeps -iad suffix', () => {
-  const opts = serverClassOptions('us-east-iad-1');
-  assert.equal(opts.length, knownServerClasses.length);
-  assert.ok(opts.every(o => o.value.endsWith('-iad')), 'all values end with -iad');
+console.log('\nRackspace catalogue:');
+test('server classes use exact region membership, including Gen 2', () => {
+  for (const region of catalog.regions) {
+    const options = serverClassOptions(catalog, region.name);
+    const expected = catalog.serverClasses.filter(serverClass => serverClass.region === region.name);
+    assert.deepEqual(options.map(option => option.value), expected.map(serverClass => serverClass.name));
+    assert.ok(options.length, `no active classes for ${region.name}`);
+  }
+  const regional = { serverClasses: [{ name: 'gen1', region: 'us-central-dfw-1' }, { name: 'gen2', region: 'us-central-dfw-2' }] };
+  assert.deepEqual(serverClassOptions(regional, 'us-central-dfw-2').map(option => option.value), ['gen2']);
 });
-test('us-east-iad-2 also uses -iad suffix', () => {
-  const opts = serverClassOptions('us-east-iad-2');
-  assert.ok(opts.every(o => o.value.endsWith('-iad')));
+test('unknown regions never synthesize server class names', () => {
+  assert.deepEqual(serverClassOptions(catalog, 'missing-region'), []);
 });
-test('aus-syd-1 produces -syd names', () => {
-  const opts = serverClassOptions('aus-syd-1');
-  assert.ok(opts.every(o => o.value.endsWith('-syd')));
-  assert.ok(opts.some(o => o.value === 'gp.vs1.medium-syd'));
+test('new cluster defaults are present in the catalogue', () => {
+  assert.ok(versionOptions(catalog).some(option => option.value === catalog.defaults.kubernetesVersion));
+  assert.ok(regionOptions(catalog).some(option => option.value === catalog.defaults.region));
+  assert.ok(cniOptions(catalog).some(option => option.value === catalog.defaults.cni));
+  for (const region of catalog.regions) {
+    assert.ok(serverClassOptions(catalog, region.name).some(option => option.value === defaultServerClass(catalog, region.name)));
+  }
 });
-test('uk-lon-1 produces -lon names', () => {
-  const opts = serverClassOptions('uk-lon-1');
-  assert.ok(opts.every(o => o.value.endsWith('-lon')));
+test('editing preserves retired versions, regions, CNIs and server classes', () => {
+  assert.ok(versionOptions(catalog, '1.20.0').some(option => option.value === '1.20.0'));
+  assert.ok(regionOptions(catalog, 'retired-region').some(option => option.value === 'retired-region'));
+  assert.ok(cniOptions(catalog, 'existing-cni').some(option => option.value === 'existing-cni'));
+  const options = serverClassOptions(catalog, catalog.defaults.region, ['retired-class', 'retired-class']);
+  assert.equal(options.filter(option => option.value === 'retired-class').length, 1);
 });
-test('us-central-dfw-1 produces -dfw names', () => {
-  const opts = serverClassOptions('us-central-dfw-1');
-  assert.ok(opts.every(o => o.value.endsWith('-dfw')));
-});
-test('hkg-hkg-1 produces -hkg names', () => {
-  const opts = serverClassOptions('hkg-hkg-1');
-  assert.ok(opts.every(o => o.value.endsWith('-hkg')));
-});
-test('io.bm2-iad → io.bm2-syd (no spurious -iad left)', () => {
-  const opts = serverClassOptions('aus-syd-1');
-  const bm2 = opts.find(o => o.value.startsWith('io.bm2'));
-  assert.equal(bm2.value, 'io.bm2-syd');
-});
-test('no region defaults to -iad', () => {
-  const opts = serverClassOptions('');
-  assert.ok(opts.every(o => o.value.endsWith('-iad')));
-});
-test('label contains the derived value', () => {
-  serverClassOptions('aus-syd-1').forEach(o => assert.ok(o.label.includes(o.value)));
-});
-test('same count for every region', () => {
-  ['us-east-iad-1','aus-syd-1','uk-lon-1','us-central-dfw-1','hkg-hkg-1'].forEach(r => {
-    assert.equal(serverClassOptions(r).length, knownServerClasses.length);
-  });
+test('catalogue options are sorted by numeric version and reflect new upstream values', () => {
+  const updated = { ...catalog, kubernetesVersions: ['1.100.0', '1.35.9'], cnis: ['new-cni'] };
+  assert.deepEqual(versionOptions(updated).map(option => option.value), updated.kubernetesVersions);
+  assert.deepEqual(cniOptions(updated), [{ label: 'new-cni', value: 'new-cni' }]);
 });
 
 // Mirror of the save() validation logic in CruRackspaceSpot.vue.

@@ -15,6 +15,7 @@ on:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
+      - 'driver/catalog.json'
       - 'deploy/charts/**'
       - 'ui/pkg/**'
 

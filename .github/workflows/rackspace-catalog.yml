@@ -1,0 +1,58 @@
+name: Update Rackspace options
+
+on:
+  schedule:
+    - cron: '15 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: rackspace-option-catalog
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Refresh Rackspace option catalogue
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Test catalogue updater
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
+      - name: Fetch current Rackspace options
+        env:
+          SPOT_REFRESH_TOKEN: ${{ secrets.SPOT_REFRESH_TOKEN }}
+        run: python3 scripts/update_catalog.py
+
+      - name: Validate UI and driver against the updated catalogue
+        run: |
+          npm --prefix ui test
+          go test ./...
+
+      - name: Open or update catalogue pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/rackspace-catalog
+          delete-branch: true
+          add-paths: driver/catalog.json
+          commit-message: 'chore: refresh Rackspace option catalogue'
+          title: 'chore: refresh Rackspace Kubernetes versions and options'
+          body: |
+            Updates Kubernetes versions, regions, active server classes, and CNI choices from Rackspace's API and OpenAPI schema.
+
+            The UI and driver share this catalogue. Only defaults for new configurations change; existing cluster selections are preserved. Merging triggers the normal release workflow; installed extensions must be upgraded to receive the new options.
+
+            Validation: catalogue updater tests, UI tests, and Go tests passed in the update job.
