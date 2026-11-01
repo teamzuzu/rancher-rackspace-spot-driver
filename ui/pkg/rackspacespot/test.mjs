@@ -249,17 +249,31 @@ test('other providers and the create wizard retain the original Rancher editor',
   }
 });
 
-test('Rancher product lifecycle initializes the editor once per store', async () => {
+test('Rancher product lifecycle initializes the editor once per store', () => {
   const calls = [];
   const product = createClusterProduct(spotClusterEditor, (component, props) => ({ component, props }));
   const plugin = { register(kind, resource) { calls.push(['register', kind, resource]); } };
   const store = { getters: { 'type-map/importEdit': () => { calls.push(['capture']); return originalClusterEditor; } } };
   // Mirror extension-manager.loadProducts, including its init export contract.
-  const implementation = await product;
+  const implementation = product;
   assert.equal(typeof implementation.init, 'function');
   implementation.init(plugin, store);
   implementation.init(plugin, store);
   assert.deepEqual(calls, [['capture'], ['register', 'edit', CLUSTER_RESOURCE]]);
+});
+
+test('product registration updates the live manager after plugin types were applied', () => {
+  const types = {};
+  const dynamic = {};
+  const plugin = { register(kind, resource, loader) { (types[kind] ||= {})[resource] = loader; } };
+  const manager = { register(kind, resource, loader) { (dynamic[kind] ||= {})[resource] = loader; } };
+  const store = { state: { $extension: manager }, getters: { 'type-map/importEdit': () => originalClusterEditor } };
+  // Rancher copies types before invoking products, so plugin.register alone
+  // would update types but leave the runtime registry without an editor.
+  Object.assign(dynamic, types);
+  createClusterProduct(spotClusterEditor, () => {}).init(plugin, store);
+  assert.equal(typeof dynamic.edit[CLUSTER_RESOURCE], 'function');
+  assert.equal(dynamic.edit[CLUSTER_RESOURCE], types.edit[CLUSTER_RESOURCE]);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

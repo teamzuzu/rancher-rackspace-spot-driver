@@ -40,7 +40,12 @@ export function registerClusterEditor(plugin, store, spotEditor, h) {
     },
   };
 
-  plugin.register('edit', CLUSTER_RESOURCE, () => Promise.resolve(editor));
+  const loader = () => Promise.resolve(editor);
+  plugin.register('edit', CLUSTER_RESOURCE, loader);
+  // Product initialization runs after applyPlugin has copied plugin.types.
+  // Publish the late registration to the live manager as well; plugin.types
+  // still records it so unloading this extension removes the adapter.
+  store.state?.$extension?.register('edit', CLUSTER_RESOURCE, loader);
 }
 
 // addProduct consumes a module with an init export, rather than calling a
