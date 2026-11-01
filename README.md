@@ -225,26 +225,68 @@ The extension is distributed via the Helm repository and loaded by Rancher's UIP
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    subgraph distribution["Release and installation"]
+        pages["GitHub Pages<br/>UI bundle and Helm repository"]
+        releases["GitHub Releases<br/>Driver binaries and Helm chart"]
+        helm["Helm installation"]
+        pages -. "Chart index" .-> helm
+        releases -. "Chart package" .-> helm
+    end
+
+    dashboard["Rancher Dashboard<br/>Vue hosted-provider extension"]
+
+    subgraph rancher["Rancher management cluster"]
+        plugin["UIPlugin registration"]
+        kontainer["KontainerDriver registration"]
+        controller["Rancher API and<br/>provisioning controller"]
+        state["Persisted ClusterInfo<br/>Metadata: cluster state JSON<br/>Password: refresh token"]
+        driver["Go driver process<br/>Create or import / Update<br/>Remove / PostCheck"]
+
+        controller <-->|"State passed between calls"| state
+        controller <-->|"Local gRPC over loopback TCP"| driver
+        kontainer -. "Registers driver" .-> controller
+    end
+
+    subgraph spot["Rackspace Spot"]
+        api["Spot API"]
+        cloudspace["Cloudspace<br/>Managed Kubernetes control plane"]
+        pools["Manual spot pools<br/>Autopilot pools<br/>Optional on-demand pool"]
+        kubernetes["Cluster Kubernetes API"]
+
+        api -->|"Provision and reconcile"| cloudspace
+        api -->|"Manage capacity"| pools
+        cloudspace --- pools
+        cloudspace --- kubernetes
+    end
+
+    helm -. "Installs" .-> plugin
+    helm -. "Installs" .-> kontainer
+    plugin -. "Registers extension" .-> dashboard
+    pages -->|"Loads UI bundle"| dashboard
+    releases -. "Binary URL and checksum" .-> kontainer
+    dashboard -->|"Cluster configuration"| controller
+    driver <-->|"Authenticated HTTPS<br/>Go SDK and Autopilot adapter"| api
+    driver -->|"PostCheck: Rancher<br/>service account"| kubernetes
 ```
-Browser (Rancher Dashboard)
-  └─ Vue UI Extension (ui/pkg/rackspacespot/) ─── served from GitHub Pages
-        │ writes genericEngineConfig
-        ▼
-Rancher API → gRPC → kontainer-engine-driver-rackspacespot (Go binary)
-                              │
-                              ├─ Create    → CreateCloudspace + CreateSpotNodePool
-                              │             (or GetCloudspace only, when importing)
-                              ├─ PostCheck → WaitForReady + GetKubeconfig + ServiceAccount
-                              ├─ Update    → UpdateSpotNodePool (scale / bid price)
-                              └─ Remove    → DeleteNodePools + DeleteCloudspace
-                                            (skipped for imported clusters)
-```
 
-The driver binary is started by Rancher as a sidecar process. Rancher communicates with it over a local gRPC socket, then terminates it when the operation completes.
+The Helm chart registers two independently built components: a **Vue UI
+extension** for the cluster form and a **Go KontainerDriver** for provisioning.
+The extension submits cluster configuration through Rancher's API. Rancher
+launches the driver as a local process and invokes its lifecycle handlers over
+gRPC; the browser does not provision infrastructure directly.
 
-State (organization, cloudspace name, pool configuration) is serialised as JSON into `ClusterInfo.Metadata` and passed back on every subsequent call, so the driver is fully stateless between invocations. The refresh token is stored separately in `ClusterInfo.Password` (not in the JSON blob) so it is never logged.
+The driver creates Cloudspaces, reconciles manual spot, Autopilot, and on-demand
+pools, and connects the resulting cluster to Rancher during `PostCheck`.
+Import reads an existing Cloudspace without provisioning it; removing an imported
+cluster from Rancher preserves the Cloudspace and its pools. Autopilot-generated
+spot pools remain under Rackspace's control.
 
-The UI extension (`ui/`) is a separate build artifact compiled with `@rancher/shell` 3.0.8. It is registered as a `hosted` provisioner and writes cluster config into `cluster.genericEngineConfig`, which Rancher passes through to the driver binary.
+The driver is stateless between calls: Rancher passes serialized state in
+`ClusterInfo.Metadata` and the refresh token separately in `ClusterInfo.Password`.
+Both the UI and driver use `driver/catalog.json` for provider options and defaults;
+the scheduled catalogue workflow proposes updates through pull requests.
 
 ---
 
