@@ -1,6 +1,3 @@
-import { h } from 'vue';
-import CruRackspaceSpot from './components/CruRackspaceSpot.vue';
-import { registerClusterEditor } from './cluster-editor.mjs';
 import { IPlugin } from '@shell/core/types';
 import RackspaceSpotProvisioner from './provisioner';
 
@@ -10,13 +7,9 @@ export default function(plugin: IPlugin): void {
 
   plugin.register('provisioner', RackspaceSpotProvisioner.ID, RackspaceSpotProvisioner);
 
-  let editorRegistered = false;
-  plugin.addProduct((extension, store) => {
-    if (!editorRegistered) {
-      registerClusterEditor(extension, store, CruRackspaceSpot, h);
-      editorRegistered = true;
-    }
-  });
+  // Rancher's product loader invokes the module's init export.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  plugin.addProduct(require('./cluster-product'));
 
   plugin.addL10n('en-us', () => ({
     cluster: {

@@ -42,3 +42,17 @@ export function registerClusterEditor(plugin, store, spotEditor, h) {
 
   plugin.register('edit', CLUSTER_RESOURCE, () => Promise.resolve(editor));
 }
+
+// addProduct consumes a module with an init export, rather than calling a
+// callback directly. Repeated product initialization must not capture our own
+// adapter as the fallback and recurse indefinitely.
+export function createClusterProduct(spotEditor, h) {
+  const registeredStores = new WeakSet();
+  return {
+    init(plugin, store) {
+      if (registeredStores.has(store)) return;
+      registerClusterEditor(plugin, store, spotEditor, h);
+      registeredStores.add(store);
+    },
+  };
+}

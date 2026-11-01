@@ -2,7 +2,7 @@
 // Tests the pure-JS logic from CruRackspaceSpot.vue without a browser or framework.
 
 import assert from 'node:assert/strict';
-import { CLUSTER_RESOURCE, isRackspaceSpotCluster, registerClusterEditor } from './cluster-editor.mjs';
+import { CLUSTER_RESOURCE, isRackspaceSpotCluster, registerClusterEditor, createClusterProduct } from './cluster-editor.mjs';
 import { normalizeAutopilotPools, validateAutopilotPools } from './autopilot.mjs';
 
 const knownServerClasses = [
@@ -247,6 +247,19 @@ test('other providers and the create wizard retain the original Rancher editor',
     const rendered = clusterEditor.render.call({ value, mode: 'create', $attrs: {}, $slots: {}, $emit() {} });
     assert.equal(rendered.component, originalClusterEditor);
   }
+});
+
+test('Rancher product lifecycle initializes the editor once per store', async () => {
+  const calls = [];
+  const product = createClusterProduct(spotClusterEditor, (component, props) => ({ component, props }));
+  const plugin = { register(kind, resource) { calls.push(['register', kind, resource]); } };
+  const store = { getters: { 'type-map/importEdit': () => { calls.push(['capture']); return originalClusterEditor; } } };
+  // Mirror extension-manager.loadProducts, including its init export contract.
+  const implementation = await product;
+  assert.equal(typeof implementation.init, 'function');
+  implementation.init(plugin, store);
+  implementation.init(plugin, store);
+  assert.deepEqual(calls, [['capture'], ['register', 'edit', CLUSTER_RESOURCE]]);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
