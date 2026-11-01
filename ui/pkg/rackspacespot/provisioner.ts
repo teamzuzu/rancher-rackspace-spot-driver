@@ -19,7 +19,7 @@ export default class RackspaceSpotProvisioner implements IClusterProvisioner {
 
   get id(): string { return DRIVER; }
 
-  get group(): string { return 'kontainer'; }
+  get group(): string { return 'hosted'; }
 
   get label(): string { return 'Rackspace Spot'; }
 

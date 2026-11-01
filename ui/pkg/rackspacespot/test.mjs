@@ -2,6 +2,7 @@
 // Tests the pure-JS logic from CruRackspaceSpot.vue without a browser or framework.
 
 import assert from 'node:assert/strict';
+import { CLUSTER_RESOURCE, isRackspaceSpotCluster, registerClusterEditor } from './cluster-editor.mjs';
 import { normalizeAutopilotPools, validateAutopilotPools } from './autopilot.mjs';
 
 const knownServerClasses = [
@@ -191,6 +192,60 @@ test('Autopilot validates capacity, memory, budget and bounds', () => {
   assert.equal(validateAutopilotPools([]), '');
   for (const change of [{ vcpus: 0 }, { vcpus: 1.5 }, { memoryPerVCPU: '3' }, { budgetPerHour: 'NaN' }, { budgetPerHour: '0' }, { minVCPUsPerNode: -1 }, { minVCPUsPerNode: 8, maxVCPUsPerNode: 2 }]) {
     assert.ok(validateAutopilotPools([{ ...valid, ...change }]));
+  }
+});
+
+test('cluster editor recognizes existing Spot clusters, including older clusters without annotations', () => {
+  assert.ok(isRackspaceSpotCluster({ id: 'fleet-default/c-spot', mgmt: { spec: { genericEngineConfig: { driverName: 'rackspacespot' } } } }));
+  assert.ok(isRackspaceSpotCluster({ id: 'fleet-default/c-spot', metadata: { annotations: { 'ui.rancher/provider': 'rackspacespot' } } }));
+  assert.ok(isRackspaceSpotCluster({ id: 'fleet-default/c-spot', provisioner: 'RackspaceSpot' }));
+  assert.equal(isRackspaceSpotCluster({ id: 'fleet-default/c-other', provisioner: 'eks' }), false);
+  assert.equal(isRackspaceSpotCluster({ rackspacespotEngineConfig: {} }), false);
+});
+test('cluster editor captures the host fallback before registering its adapter', () => {
+  const original = { name: 'HostClusterEditor' };
+  const spot = { name: 'SpotEditor' };
+  const calls = [];
+  let loadEditor;
+  registerClusterEditor({ register(kind, resource, loader) {
+    calls.push('register');
+    assert.equal(kind, 'edit');
+    assert.equal(resource, CLUSTER_RESOURCE);
+    loadEditor = loader;
+  } }, { getters: { 'type-map/importEdit'(resource) {
+    calls.push('capture');
+    assert.equal(resource, CLUSTER_RESOURCE);
+    return original;
+  } } }, spot, (component, props, slots) => ({ component, props, slots }));
+  assert.deepEqual(calls, ['capture', 'register']);
+  // The loader resolves to the component; rendering is checked below after loading.
+  assert.equal(typeof loadEditor, 'function');
+});
+const originalClusterEditor = { name: 'OriginalClusterEditor' };
+const spotClusterEditor = { name: 'SpotClusterEditor' };
+let clusterEditorLoader;
+registerClusterEditor({ register(_kind, _resource, loader) { clusterEditorLoader = loader; } }, {
+  getters: { 'type-map/importEdit': () => originalClusterEditor },
+}, spotClusterEditor, (component, props, slots) => ({ component, props, slots }));
+const clusterEditor = await clusterEditorLoader();
+test('Spot view and edit bypass the legacy wrapper and forward values, attrs and events', () => {
+  for (const mode of ['view', 'edit']) {
+    const value = { id: 'fleet-default/c-spot', provisioner: 'rackspacespot' };
+    const events = [];
+    const context = { value, mode, $attrs: { 'done-route': 'clusters' }, $slots: {}, $emit: (...args) => events.push(args) };
+    const rendered = clusterEditor.render.call(context);
+    assert.equal(rendered.component, spotClusterEditor);
+    assert.equal(rendered.props.value, value);
+    assert.equal(rendered.props.mode, mode);
+    assert.equal(rendered.props['done-route'], 'clusters');
+    rendered.props['onUpdate:value'](value);
+    assert.deepEqual(events, [['update:value', value]]);
+  }
+});
+test('other providers and the create wizard retain the original Rancher editor', () => {
+  for (const value of [{ id: 'fleet-default/c-other', provisioner: 'gke' }, {}]) {
+    const rendered = clusterEditor.render.call({ value, mode: 'create', $attrs: {}, $slots: {}, $emit() {} });
+    assert.equal(rendered.component, originalClusterEditor);
   }
 });
 

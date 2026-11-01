@@ -123,6 +123,20 @@ Or via **☰ → Extensions → Installed → Rackspace Spot → ⋮ → Upgrade
 
 ---
 
+## Rancher 2.15 cluster configuration warning
+
+If viewing or editing a Spot cluster displays “Support for UI Plugins (based on
+Ember) … has been removed in 2.15.0”, upgrade the Rackspace Spot extension to a
+release containing the Rancher 2.15 editor compatibility fix, then reload the
+Dashboard. Upgrading only the Go driver binary does not update the UI extension.
+
+The extension uses Vue and the UI Extensions framework. Rancher 2.15's default
+cluster editor can classify an external KontainerDriver as legacy before loading
+its extension component. The extension routes existing Spot clusters directly to
+its Vue form and keeps Rancher's original editor for other providers. Older Spot
+clusters are also recognized by their stored driver name, without requiring a
+new provider annotation or recreating the cluster.
+
 ## Configuration reference
 
 All options are set in the Rancher cluster creation form.
@@ -270,7 +284,7 @@ The driver binary is started by Rancher as a sidecar process. Rancher communicat
 
 State (organization, cloudspace name, pool configuration) is serialised as JSON into `ClusterInfo.Metadata` and passed back on every subsequent call, so the driver is fully stateless between invocations. The refresh token is stored separately in `ClusterInfo.Password` (not in the JSON blob) so it is never logged.
 
-The UI extension (`ui/`) is a separate build artifact compiled with `@rancher/shell` 3.0.8. It is registered as a `kontainer` provisioner and writes cluster config into `cluster.genericEngineConfig`, which Rancher passes through to the driver binary.
+The UI extension (`ui/`) is a separate build artifact compiled with `@rancher/shell` 3.0.8. It is registered as a `hosted` provisioner and writes cluster config into `cluster.genericEngineConfig`, which Rancher passes through to the driver binary.
 
 ---
 
