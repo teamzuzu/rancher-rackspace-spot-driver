@@ -2,6 +2,7 @@
 // Tests the pure-JS logic from CruRackspaceSpot.vue without a browser or framework.
 
 import assert from 'node:assert/strict';
+import { meetsMinimumBid, validateSpotBids } from './bids.mjs';
 import { readFileSync } from 'node:fs';
 import { serverClassOptions, regionOptions, versionOptions, cniOptions, defaultServerClass } from './catalog.mjs';
 const catalog = JSON.parse(readFileSync(new URL('../../../driver/catalog.json', import.meta.url)));
@@ -220,6 +221,22 @@ test('product registration updates the live manager after plugin types were appl
   createClusterProduct(spotClusterEditor, () => {}).init(plugin, store);
   assert.equal(typeof dynamic.edit[CLUSTER_RESOURCE], 'function');
   assert.equal(dynamic.edit[CLUSTER_RESOURCE], types.edit[CLUSTER_RESOURCE]);
+});
+
+test('spot bid minimum accepts the boundary and rejects invalid or smaller values', () => {
+  for (const bid of ['0.01', '0.010', '0.02', '1', 0.01]) assert.ok(meetsMinimumBid(bid), String(bid));
+  for (const bid of ['', null, undefined, '0', '0.009', '-1', 'NaN', 'Infinity', '1e-2']) assert.equal(meetsMinimumBid(bid), false, String(bid));
+});
+test('primary and additional spot pools enforce the minimum on save', () => {
+  assert.match(validateSpotBids({ spotBidPrice: '0.009' }, []), /Primary/);
+  assert.match(validateSpotBids({ spotBidPrice: '0.01' }, [{ bidPrice: '0.009' }]), /pool 2/);
+  assert.equal(validateSpotBids({ disablePrimarySpotPool: true, spotBidPrice: '0' }, [{ bidPrice: '0.01' }]), '');
+  assert.equal(validateSpotBids({ spotBidPrice: '0.01' }, [{ bidPrice: '0.01' }]), '');
+});
+test('Autopilot budgets enforce the same minimum', () => {
+  const pool = { vcpus: 8, memoryPerVCPU: 'any', budgetPerHour: '0.009', minVCPUsPerNode: 0, maxVCPUsPerNode: 0 };
+  assert.match(validateAutopilotPools([pool]), /at least \$0.01/);
+  assert.equal(validateAutopilotPools([{ ...pool, budgetPerHour: '0.01' }]), '');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

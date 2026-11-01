@@ -127,7 +127,6 @@
     <template v-if="!config.importExistingCluster || mode === 'edit'">
       <!-- ── Spot Node Pools ───────────────────────────────── -->
       <h3 class="mt-20">Spot Node Pools</h3>
-      <a href="https://tombojer.github.io/spot-cost-analyzer/" target="_blank" rel="noopener" class="spot-cost-link">Estimate costs with the Spot Cost Analyzer ↗</a>
 
       <Checkbox
         v-model:value="config.disablePrimarySpotPool"
@@ -164,6 +163,10 @@
               v-model:value="config.spotBidPrice"
               label="Bid Price (USD/hr)"
               placeholder="0.01"
+              type="number"
+              :min="0.01"
+              step="any"
+              :required="true"
               :mode="mode"
             />
           </div>
@@ -240,6 +243,10 @@
               v-model:value="pool.bidPrice"
               label="Bid Price (USD/hr)"
               placeholder="0.01"
+              type="number"
+              :min="0.01"
+              step="any"
+              :required="true"
               :mode="mode"
             />
           </div>
@@ -301,7 +308,7 @@
             <LabeledSelect v-model:value="pool.memoryPerVCPU" label="Memory per vCPU (GB)" :options="['any', '2', '4', '8']" :mode="mode" />
           </div>
           <div class="col span-4">
-            <LabeledInput v-model:value="pool.budgetPerHour" label="Pool Budget (USD/hr)" :mode="mode" />
+            <LabeledInput v-model:value="pool.budgetPerHour" label="Pool Budget (USD/hr)" type="number" :min="0.01" step="any" :required="true" :mode="mode" />
           </div>
         </div>
         <div class="row mt-10">
@@ -368,6 +375,7 @@ import LabeledInput      from '@components/Form/LabeledInput/LabeledInput';
 import LabeledSelect     from '@shell/components/form/LabeledSelect';
 import Checkbox          from '@components/Form/Checkbox/Checkbox';
 
+import { validateSpotBids } from '../bids.mjs';
 import { normalizeAutopilotPools, validateAutopilotPools } from '../autopilot.mjs';
 
 import catalog from '../../../../driver/catalog.json';
@@ -564,7 +572,7 @@ export default defineComponent({
 
       const autopilotPools = normalizeAutopilotPools(this.autopilotPools);
       if (!this.config.importExistingCluster || this.mode === 'edit') {
-        const error = validateAutopilotPools(autopilotPools);
+        const error = validateSpotBids(this.config, this.additionalSpotPools) || validateAutopilotPools(autopilotPools);
         if (error) {
           this.errors = [error];
           if (btnCb) btnCb(false);
@@ -641,8 +649,6 @@ export default defineComponent({
 .mt-15 { margin-top: 15px; }
 .mt-20 { margin-top: 20px; }
 .mb-20 { margin-bottom: 20px; }
-.spot-cost-link { font-size: 0.85em; color: var(--primary); text-decoration: none; }
-.spot-cost-link:hover { text-decoration: underline; }
 .import-note {
   font-size: 0.875rem;
   color: var(--muted);
