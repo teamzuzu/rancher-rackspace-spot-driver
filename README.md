@@ -5,11 +5,12 @@ A Rancher cluster driver and UI extension to create and manage Rackspace Spot "C
 ### Features
 
 - Create and manage Cloudspaces in all supported Spot regions via the Rancher UI
-- **Import an existing Cloudspace** into Rancher without reprovisioning it
+- Import an existing Cloudspace without reprovisioning it
 - Select from a list of supported Cloudspace kubernetes versions
 - Create and update node pools with configurable bid and autoscaling options  
-- Add an optional on-demand node pool 
-- GPU-enabled CloudSpaces 
+- Add an optional on-demand node pool
+- Autopilot Pools supported
+- GPU-enabled CloudSpaces  
 
 ### Unsupported
 
@@ -113,29 +114,9 @@ The driver reads the real Cloudspace configuration from the Spot API and registe
 
 To upgrade, update the repository and upgrade the Helm chart:
 
-```bash
-helm repo update rackspace-spot
-helm upgrade rackspacespot rackspace-spot/rackspacespot \
-  --namespace cattle-ui-plugin-system
-```
-
-Or via **☰ → Extensions → Installed → Rackspace Spot → ⋮ → Upgrade**.
+via **☰ → Extensions → Installed → Rackspace Spot → ⋮ → Upgrade**.
 
 ---
-
-## Rancher 2.15 cluster configuration warning
-
-If viewing or editing a Spot cluster displays “Support for UI Plugins (based on
-Ember) … has been removed in 2.15.0”, upgrade the Rackspace Spot extension to a
-release containing the Rancher 2.15 editor compatibility fix, then reload the
-Dashboard. Upgrading only the Go driver binary does not update the UI extension.
-
-The extension uses Vue and the UI Extensions framework. Rancher 2.15's default
-cluster editor can classify an external KontainerDriver as legacy before loading
-its extension component. The extension routes existing Spot clusters directly to
-its Vue form and keeps Rancher's original editor for other providers. Older Spot
-clusters are also recognized by their stored driver name, without requiring a
-new provider annotation or recreating the cluster.
 
 ## Configuration reference
 
@@ -165,25 +146,17 @@ selects server classes and manages bids automatically. Add pools in the
 **Autopilot Pools** section; enable **Disable primary manual spot pool** for
 Autopilot-only capacity. Manual spot and on-demand pools can coexist with Autopilot.
 
-For API-driven Rancher configuration, `autopilot-pools` (`autopilotPools` in
-engine configuration) is a JSON array, for example:
-
-```json
-[{"vcpus": 16, "memoryPerVCPU": "4", "budgetPerHour": "0.50", "minVCPUsPerNode": 2, "maxVCPUsPerNode": 8}]
-```
-
 Pool names are generated as UUIDs when omitted. Preserve returned names when
 editing; submit `[]` to remove all Autopilot pools. Memory per vCPU accepts
 `any`, `2`, `4`, or `8` GB; node-size bounds are optional (zero means unset).
 Autopilot pools do not support autoscaling. Scale them by changing total vCPUs,
-rather than Rancher's node-count scaling action. Import reads existing Autopilot
-settings; deleting an imported Rancher cluster preserves its Cloudspace.
+rather than Rancher's node-count scaling action. 
 
 See [Rackspace’s Autopilot guide](https://spot.rackspace.com/docs/en/autopilot-bids).
 
 ### Spot node pool
 
-A spot pool is always created. Spot nodes are preemptible and billed at your bid price when capacity is available.
+Spot nodes are preemptible and billed at your bid price when capacity is available.
 
 | Option | Required | Default | Description |
 |---|---|---|---|
@@ -215,59 +188,12 @@ region, including Gen 2 regions; the driver reads version/CNI/class defaults fro
 the same catalogue. Existing cluster selections remain visible even if Rackspace
 retires them. Updating this catalogue does not upgrade existing clusters.
 
-The **Update Rackspace options** GitHub Action runs daily at 05:15 UTC and can
-also be started with **Run workflow**. It fetches versions, regions, and classes
-from Rackspace's authenticated API and CNI choices from its published OpenAPI
-schema. It opens or updates a PR on `chore/rackspace-catalog` only when options
-change. Merging that PR triggers the normal release workflow; upgrade the
-installed extension to receive the updated choices.
-
-One-time setup: add a Rackspace refresh token as the repository Actions secret
-**`SPOT_REFRESH_TOKEN`** under **Settings → Secrets and variables → Actions**.
-The workflow uses `GITHUB_TOKEN` to create its PR. No provider credentials are
-stored in the generated catalogue. A failed or incomplete upstream response
-leaves the previous catalogue intact.
-
-For a local refresh, export `SPOT_REFRESH_TOKEN` in your shell and run:
-
-```bash
-python3 scripts/update_catalog.py
-python3 scripts/update_catalog.py --check  # Verify without writing
-python3 -m unittest discover -s scripts -p 'test_*.py'
-npm --prefix ui test
-make test
-```
-
-Numeric pool settings, bid budgets, and feature toggles remain user choices;
-the catalogue tracks provider-supported dropdowns rather than changing those
-settings automatically.
 
 Run `spotctl server-classes list` for live server-class information, or visit
 the [Rackspace Spot portal](https://spot.rackspace.com).
 
 ---
 
-## Building from source
-
-### Driver binary
-
-```bash
-git clone https://github.com/teamzuzu/rancher-rackspace-spot-driver
-cd rancher-rackspace-spot-driver
-
-# Resolve dependencies (requires Go 1.25+)
-go mod tidy
-
-# Build
-make build
-# Binary written to bin/kontainer-engine-driver-rackspacespot
-
-# Run tests
-make test
-
-# Build container image
-make image
-```
 
 #### Local driver testing with Rancher
 
