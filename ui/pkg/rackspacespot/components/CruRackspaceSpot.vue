@@ -42,8 +42,8 @@
           v-model:value="config.rackspaceSpotRefreshToken"
           label="Refresh Token"
           type="password"
-          placeholder="Rackspace Spot refresh token"
-          :required="true"
+          :placeholder="mode === 'edit' ? 'Leave blank to keep the stored token' : 'Rackspace Spot refresh token'"
+          :required="mode === 'create'"
           :mode="mode"
         />
       </div>
@@ -481,7 +481,7 @@ export default defineComponent({
 
   computed: {
     validationPassed() {
-      return !!(this.clusterName && this.config.rackspaceSpotRefreshToken && this.config.rackspaceSpotOrganization);
+      return !!(this.clusterName && (this.mode === 'edit' || this.config.rackspaceSpotRefreshToken) && this.config.rackspaceSpotOrganization);
     },
     autoscalingPoolCount() {
       return (!this.config.disablePrimarySpotPool && this.config.spotAutoscalingEnabled ? 1 : 0)
@@ -553,7 +553,7 @@ export default defineComponent({
         if (btnCb) btnCb(false);
         return;
       }
-      if (!this.config.rackspaceSpotRefreshToken) {
+      if (this.mode !== 'edit' && !this.config.rackspaceSpotRefreshToken) {
         this.errors = ['Refresh Token is required'];
         if (btnCb) btnCb(false);
         return;
@@ -597,6 +597,11 @@ export default defineComponent({
           autopilotPools: JSON.stringify(autopilotPools),
           additionalSpotPools: JSON.stringify(this.additionalSpotPools),
         };
+
+        // An omitted token retains the credential already stored by Rancher.
+        if (this.mode === 'edit' && !cfg.rackspaceSpotRefreshToken) {
+          delete cfg.rackspaceSpotRefreshToken;
+        }
 
         if (this.value?.id) {
           // mgmtClusterId is the Norman v3 cluster ID (e.g. c-w467n).

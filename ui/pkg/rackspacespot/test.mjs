@@ -239,5 +239,44 @@ test('Autopilot budgets enforce the same minimum', () => {
   assert.equal(validateAutopilotPools([{ ...pool, budgetPerHour: '0.01' }]), '');
 });
 
+// Exercise the component's actual validation and persistence methods without a browser.
+const formScript = readFileSync(new URL('./components/CruRackspaceSpot.vue', import.meta.url), 'utf8')
+  .split('<script>')[1].split('</script>')[0]
+  .replace(/^import .*;$/gm, '')
+  .replace('export default defineComponent(', 'return (');
+const form = new Function('catalog', 'CruResource', 'Banner', 'LabeledInput', 'LabeledSelect', 'Checkbox',
+  'normalizeAutopilotPools', 'validateSpotBids', 'validateAutopilotPools', formScript)(
+  catalog, {}, {}, {}, {}, {}, normalizeAutopilotPools, validateSpotBids, validateAutopilotPools);
+
+test('edit validation allows stored credentials while creation requires a token', () => {
+  const context = { clusterName: 'cluster', config: { rackspaceSpotOrganization: 'org' }, mode: 'edit' };
+  assert.equal(form.computed.validationPassed.call(context), true);
+  context.mode = 'create';
+  assert.equal(form.computed.validationPassed.call(context), false);
+});
+
+for (const token of [undefined, '', 'replacement-token']) {
+  let saved = false;
+  const existing = { async save() { saved = true; } };
+  const context = {
+    mode: 'edit', value: { id: 'fleet-default/spot', mgmtClusterId: 'c-spot' },
+    clusterName: 'cluster', config: { rackspaceSpotOrganization: 'org', rackspaceSpotRefreshToken: token, disablePrimarySpotPool: true },
+    autopilotPools: [], additionalSpotPools: [], autoscalingPoolCount: 0,
+    $store: { async dispatch(action, options) {
+      assert.equal(action, 'rancher/find');
+      assert.equal(options.id, 'c-spot');
+      return existing;
+    } },
+    $router: { push() {} },
+  };
+  await form.methods.save.call(context);
+  test(`edit saves with ${token ? 'a replacement token' : 'a blank token (' + String(token) + ')'}`, () => {
+    assert.deepEqual(context.errors, []);
+    assert.equal(saved, true);
+    assert.equal(Object.hasOwn(existing.rackspacespotEngineConfig, 'rackspaceSpotRefreshToken'), !!token);
+    if (token) assert.equal(existing.rackspacespotEngineConfig.rackspaceSpotRefreshToken, token);
+  });
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
