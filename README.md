@@ -1,5 +1,10 @@
 # Rancher Cluster Driver For Rackspace Spot
 
+[!Note]
+Looks like rackspace spot is gone. Oh well. 
+
+### Rancher Cluster Driver For Rackspace Spot
+
 A Rancher cluster driver and UI extension to create and manage Rackspace Spot "Cloudspaces" aka managed kubernetes clusters. 
 
 ### Features
