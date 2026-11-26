@@ -1,8 +1,8 @@
 name: Update Rackspace options
 
 on:
-  schedule:
-    - cron: '15 5 * * *'
+#  schedule:
+#    - cron: '15 5 * * *'
   workflow_dispatch:
 
 permissions:
