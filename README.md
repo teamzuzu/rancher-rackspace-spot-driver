@@ -1,7 +1,7 @@
 # Rancher Cluster Driver For Rackspace Spot
 
-[!Note]
-Looks like rackspace spot is gone. Oh well. 
+>[!Note]
+>Looks like rackspace spot is gone. Oh well. 
 
 ### Rancher Cluster Driver For Rackspace Spot
 
